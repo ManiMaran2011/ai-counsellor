@@ -2,30 +2,20 @@
 
 import { createContext, useContext, useState } from "react";
 
-/* =========================
-   TYPES
-========================= */
+/* ================= TYPES ================= */
 
-export type Stage = 1 | 2 | 3 | 4;
-export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 export type TaskStatus = "NOT_STARTED" | "IN_PROGRESS" | "DONE";
-
-export type TaskCategory =
-  | "SOP"
-  | "TEST"
-  | "FINANCE"
-  | "PORTAL"
-  | "VISA";
+export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 
 export type Task = {
   id: string;
   title: string;
-  category: TaskCategory;
+  category: "SOP" | "TEST" | "FINANCE" | "PORTAL" | "VISA";
   status: TaskStatus;
   priority?: number;
+  dependsOn?: string[];
   deadline?: string;
   risk?: RiskLevel;
-  dependsOn?: string[];
 };
 
 export type Profile = {
@@ -63,9 +53,7 @@ export type University = {
   program?: string;
 };
 
-/* =========================
-   CONTEXT TYPE
-========================= */
+type Stage = 1 | 2 | 3 | 4;
 
 type UserContextType = {
   profile: Profile | null;
@@ -76,34 +64,18 @@ type UserContextType = {
   confidence: number;
   risk: RiskLevel;
 
-  updateProfile: (data: Partial<Profile>) => void;
   completeOnboarding: (profile: Profile) => void;
-
-  lockUniversity: (uni: University, generatedTasks: Task[]) => boolean;
+  lockUniversity: (uni: University, tasks: Task[]) => boolean;
   unlockUniversity: () => void;
 
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
+  increaseConfidence: (amount?: number) => void;
+  decayConfidence: (amount?: number) => void;
 };
 
-/* =========================
-   CONTEXT
-========================= */
+/* ================= CONTEXT ================= */
 
 const UserContext = createContext<UserContextType>(null as any);
-
-const emptyProfile: Profile = {
-  name: "",
-  email: "",
-  phone: "",
-  academics: { degree: "" },
-  goals: { targetDegree: "", intake: "", countries: [] },
-  budget: { annualINR: "", funding: "" },
-  readiness: { ielts: "", gre: "", sop: "" },
-};
-
-/* =========================
-   PROVIDER
-========================= */
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -112,24 +84,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     useState<University | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [confidence, setConfidence] = useState<number>(40);
+  const [confidence, setConfidence] = useState(40);
   const [risk, setRisk] = useState<RiskLevel>("MEDIUM");
 
-  /* ---------- PROFILE ---------- */
-
-  const updateProfile = (data: Partial<Profile>) => {
-    setProfile((prev) => ({
-      ...(prev ?? emptyProfile),
-      ...data,
-    }));
-  };
+  /* ========== CORE ACTIONS ========== */
 
   const completeOnboarding = (data: Profile) => {
     setProfile(data);
     setStage(2);
   };
-
-  /* ---------- UNIVERSITY ---------- */
 
   const lockUniversity = (uni: University, generatedTasks: Task[]) => {
     if (lockedUniversity) return false;
@@ -151,7 +114,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setRisk("MEDIUM");
   };
 
-  /* ---------- TASK UPDATES ---------- */
+  /* ========== TASK + CONFIDENCE LOGIC ========== */
 
   const updateTaskStatus = (taskId: string, status: TaskStatus) => {
     setTasks((prev) =>
@@ -161,14 +124,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     );
 
     if (status === "DONE") {
-      setConfidence((c) => Math.min(c + 10, 100));
+      increaseConfidence(10);
     }
+  };
 
-    setRisk((prevRisk) => {
-      if (confidence > 75) return "LOW";
-      if (confidence < 40) return "HIGH";
-      return prevRisk;
-    });
+  const increaseConfidence = (amount = 5) => {
+    setConfidence((c) => Math.min(100, c + amount));
+  };
+
+  const decayConfidence = (amount = 5) => {
+    setConfidence((c) => Math.max(0, c - amount));
   };
 
   return (
@@ -180,11 +145,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         tasks,
         confidence,
         risk,
-        updateProfile,
         completeOnboarding,
         lockUniversity,
         unlockUniversity,
         updateTaskStatus,
+        increaseConfidence,
+        decayConfidence,
       }}
     >
       {children}
