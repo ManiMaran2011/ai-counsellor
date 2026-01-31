@@ -1,41 +1,36 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useUser } from "@/app/context/UserContext";
+import { explainUniversityWithGemini } from "@/app/engine/geminiUniversityReasoner";
 
-function getTone(stage: number, confidence: number) {
-  if (stage === 4 && confidence < 50)
-    return "calm, reassuring, supportive";
+export default function AICounsellor({
+  university,
+  category,
+}: {
+  university: string;
+  category: "DREAM" | "TARGET" | "SAFE";
+}) {
+  const { profile, stage, confidence, risk } = useUser();
+  const [message, setMessage] = useState("Analyzing profile…");
 
-  if (stage === 4 && confidence >= 80)
-    return "confident, strategic, motivating";
+  useEffect(() => {
+    if (!profile) return;
 
-  if (stage === 2)
-    return "analytical, explanatory";
-
-  return "neutral, guiding";
-}
-
-function getOpeningMessage(stage: number, confidence: number) {
-  if (stage === 4 && confidence < 60)
-    return "Let’s slow down and stabilize your application. We still have time.";
-
-  if (stage === 4)
-    return "You’re in execution mode. Let’s focus on high-impact actions.";
-
-  if (stage === 2)
-    return "Let’s evaluate universities based on your profile and risks.";
-
-  return "I’m here to guide your journey step by step.";
-}
-
-export default function AICounsellor() {
-  const { stage, confidence } = useUser();
+    explainUniversityWithGemini({
+      universityName: university,
+      category,
+      profile,
+    }).then(setMessage);
+  }, [profile, university, category]);
 
   return (
-    <div className="bg-white border rounded-xl p-4 shadow-sm flex flex-col gap-3">
+    <div className="bg-white border rounded-2xl p-6 shadow-md space-y-4 transition-all">
       <div className="flex items-center gap-3">
         <div className="size-10 bg-primary rounded-full flex items-center justify-center text-white">
-          <span className="material-symbols-outlined">smart_toy</span>
+          <span className="material-symbols-outlined">
+            psychology
+          </span>
         </div>
         <div>
           <p className="font-bold">AI Counsellor</p>
@@ -45,22 +40,19 @@ export default function AICounsellor() {
         </div>
       </div>
 
-      <div className="bg-slate-50 p-3 rounded-lg text-sm text-slate-700">
-        {getOpeningMessage(stage, confidence)}
+      <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-700 leading-relaxed">
+        {message}
       </div>
 
-      <div className="text-xs text-slate-400 italic">
-        Tone: {getTone(stage, confidence)}
-      </div>
+      {risk === "HIGH" && (
+        <div className="bg-red-50 border border-red-200 p-3 rounded-lg text-sm">
+          ⚠️ I recommend expert review. Risk is increasing.
+        </div>
+      )}
+
+      <p className="text-xs text-slate-400 italic">
+        Decisions are based on your current profile and progress.
+      </p>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
