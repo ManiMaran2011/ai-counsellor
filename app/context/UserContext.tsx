@@ -2,27 +2,29 @@
 
 import { createContext, useContext, useState } from "react";
 
-/* ===================== CORE TYPES ===================== */
+/* =========================
+   TYPES
+========================= */
 
+export type Stage = 1 | 2 | 3 | 4;
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
+export type TaskStatus = "NOT_STARTED" | "IN_PROGRESS" | "DONE";
 
-export type TaskStatus =
-  | "NOT_STARTED"
-  | "IN_PROGRESS"
-  | "DONE";
+export type TaskCategory =
+  | "SOP"
+  | "TEST"
+  | "FINANCE"
+  | "PORTAL"
+  | "VISA";
 
 export type Task = {
   id: string;
   title: string;
-  category?: string;
-
+  category: TaskCategory;
   status: TaskStatus;
-
   priority?: number;
   deadline?: string;
-
   risk?: RiskLevel;
-
   dependsOn?: string[];
 };
 
@@ -61,93 +63,113 @@ export type University = {
   program?: string;
 };
 
-export type Stage = 1 | 2 | 3 | 4;
-
-/* ===================== CONTEXT TYPE ===================== */
+/* =========================
+   CONTEXT TYPE
+========================= */
 
 type UserContextType = {
   profile: Profile | null;
   stage: Stage;
-
   lockedUniversity: University | null;
 
   tasks: Task[];
-
   confidence: number;
   risk: RiskLevel;
 
+  updateProfile: (data: Partial<Profile>) => void;
   completeOnboarding: (profile: Profile) => void;
 
-  lockUniversity: (uni: University) => boolean;
+  lockUniversity: (uni: University, generatedTasks: Task[]) => boolean;
   unlockUniversity: () => void;
 
-  setTasks: (tasks: Task[]) => void;
-
-  increaseConfidence: (by?: number) => void;
-  decayConfidence: (by?: number) => void;
+  updateTaskStatus: (taskId: string, status: TaskStatus) => void;
 };
 
-/* ===================== CONTEXT ===================== */
+/* =========================
+   CONTEXT
+========================= */
 
 const UserContext = createContext<UserContextType>(null as any);
 
-/* ===================== PROVIDER ===================== */
+const emptyProfile: Profile = {
+  name: "",
+  email: "",
+  phone: "",
+  academics: { degree: "" },
+  goals: { targetDegree: "", intake: "", countries: [] },
+  budget: { annualINR: "", funding: "" },
+  readiness: { ielts: "", gre: "", sop: "" },
+};
 
-export function UserProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+/* =========================
+   PROVIDER
+========================= */
+
+export function UserProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stage, setStage] = useState<Stage>(1);
-
   const [lockedUniversity, setLockedUniversity] =
     useState<University | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>([]);
-
-  const [confidence, setConfidence] = useState(70);
+  const [confidence, setConfidence] = useState<number>(40);
   const [risk, setRisk] = useState<RiskLevel>("MEDIUM");
 
-  /* ===================== ACTIONS ===================== */
+  /* ---------- PROFILE ---------- */
+
+  const updateProfile = (data: Partial<Profile>) => {
+    setProfile((prev) => ({
+      ...(prev ?? emptyProfile),
+      ...data,
+    }));
+  };
 
   const completeOnboarding = (data: Profile) => {
     setProfile(data);
     setStage(2);
-    setConfidence(65);
-    setRisk("MEDIUM");
   };
 
-  const lockUniversity = (uni: University) => {
+  /* ---------- UNIVERSITY ---------- */
+
+  const lockUniversity = (uni: University, generatedTasks: Task[]) => {
     if (lockedUniversity) return false;
 
     setLockedUniversity(uni);
+    setTasks(generatedTasks);
     setStage(4);
-
+    setConfidence(40);
     setRisk("MEDIUM");
-    setConfidence(60);
 
     return true;
   };
 
   const unlockUniversity = () => {
     setLockedUniversity(null);
-    setStage(2);
     setTasks([]);
-
-    setConfidence((c) => Math.max(40, c - 10));
+    setStage(2);
+    setConfidence(40);
     setRisk("MEDIUM");
   };
 
-  const increaseConfidence = (by = 5) => {
-    setConfidence((c) => Math.min(100, c + by));
-  };
+  /* ---------- TASK UPDATES ---------- */
 
-  const decayConfidence = (by = 2) => {
-    setConfidence((c) => Math.max(0, c - by));
-  };
+  const updateTaskStatus = (taskId: string, status: TaskStatus) => {
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId ? { ...t, status } : t
+      )
+    );
 
-  /* ===================== PROVIDER ===================== */
+    if (status === "DONE") {
+      setConfidence((c) => Math.min(c + 10, 100));
+    }
+
+    setRisk((prevRisk) => {
+      if (confidence > 75) return "LOW";
+      if (confidence < 40) return "HIGH";
+      return prevRisk;
+    });
+  };
 
   return (
     <UserContext.Provider
@@ -156,25 +178,18 @@ export function UserProvider({
         stage,
         lockedUniversity,
         tasks,
-
         confidence,
         risk,
-
+        updateProfile,
         completeOnboarding,
         lockUniversity,
         unlockUniversity,
-
-        setTasks,
-
-        increaseConfidence,
-        decayConfidence,
+        updateTaskStatus,
       }}
     >
       {children}
     </UserContext.Provider>
   );
 }
-
-/* ===================== HOOK ===================== */
 
 export const useUser = () => useContext(UserContext);
