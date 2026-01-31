@@ -1,7 +1,25 @@
 // app/engine/taskEngine.ts
 
 import { TASK_TEMPLATES } from "./taskTemplates";
-import type { Profile, University, Task } from "@/app/context/UserContext";
+import type { Profile, University, Task, RiskLevel } from "@/app/context/UserContext";
+
+/* ================= RISK LOGIC ================= */
+
+function inferTaskRisk(
+  taskId: string,
+  priority: number
+): RiskLevel {
+  // Blocking / submission-critical tasks
+  if (priority <= 1) return "HIGH";
+
+  // Important but not fatal
+  if (priority === 2) return "MEDIUM";
+
+  // Optional / late-stage tasks
+  return "LOW";
+}
+
+/* ================= TASK GENERATION ================= */
 
 export function generateTasks({
   profile,
@@ -12,7 +30,7 @@ export function generateTasks({
   university: University;
   existingTasks?: Task[];
 }): Task[] {
-  const tasks = TASK_TEMPLATES
+  const tasks: Task[] = TASK_TEMPLATES
     .filter((tpl) => tpl.requiredIf(profile, university))
     .map((tpl) => {
       const existing = existingTasks.find(
@@ -22,12 +40,17 @@ export function generateTasks({
       return {
         id: tpl.id,
         title: tpl.title,
-        category: tpl.category,
-        priority: tpl.priority,
         status: existing?.status ?? "NOT_STARTED",
-        dependsOn: tpl.dependsOn,
+        risk: inferTaskRisk(tpl.id, tpl.priority),
       };
     });
 
-  return tasks.sort((a, b) => a.priority - b.priority);
+  // Lower priority number = higher urgency
+  return tasks.sort((a, b) => {
+    const pa =
+      TASK_TEMPLATES.find((t) => t.id === a.id)?.priority ?? 99;
+    const pb =
+      TASK_TEMPLATES.find((t) => t.id === b.id)?.priority ?? 99;
+    return pa - pb;
+  });
 }
