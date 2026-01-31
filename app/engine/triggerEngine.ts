@@ -1,15 +1,15 @@
 // app/engine/triggerEngine.ts
 
 import type { Task } from "@/app/context/UserContext";
-import { applyTaskTriggers } from "./taskTriggers";
+import { triggerTasksOnCompletion } from "./taskTriggers";
 
 /**
  * Central trigger engine
  * Runs AFTER a task is completed
  */
-export function runTriggerEngine(
+export function applyTriggerEngine(
   completedTaskId: string,
   tasks: Task[]
 ): Task[] {
-  return applyTaskTriggers(completedTaskId, tasks);
+  return triggerTasksOnCompletion(completedTaskId, tasks);
 }
