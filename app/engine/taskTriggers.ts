@@ -1,55 +1,35 @@
 // app/engine/taskTriggers.ts
 
-import { Task } from "@/app/context/UserContext";
+import type { Task } from "@/app/context/UserContext";
 
 /**
- * A trigger defines:
- * - which task completion unlocks something
- * - which new task gets created
+ * Declarative task triggers.
+ * When one task is completed, unlock another.
+ * Phase-1 compliant: ONLY Task fields allowed.
  */
+
 export type TaskTrigger = {
   whenCompleted: string;
   creates: Task;
 };
 
-/**
- * ALL TASK TRIGGERS
- * Every created task MUST fully satisfy Task type
- */
 export const TASK_TRIGGERS: TaskTrigger[] = [
   {
     whenCompleted: "sop",
     creates: {
       id: "upload-sop",
-      title: "Upload SOP PDF to University Portal",
+      title: "Upload SOP to University Portal",
       status: "NOT_STARTED",
       risk: "HIGH",
-      category: "PORTAL",
-      priority: 1,
     },
   },
-
   {
     whenCompleted: "ielts",
     creates: {
-      id: "send-ielts-score",
-      title: "Send IELTS Score to University",
-      status: "NOT_STARTED",
-      risk: "MEDIUM",
-      category: "TEST",
-      priority: 2,
-    },
-  },
-
-  {
-    whenCompleted: "bank-proof",
-    creates: {
-      id: "pay-fee",
-      title: "Pay University Application Fee",
+      id: "application-fee",
+      title: "Pay Application Fee",
       status: "NOT_STARTED",
       risk: "HIGH",
-      category: "PORTAL",
-      priority: 1,
     },
   },
 ];
