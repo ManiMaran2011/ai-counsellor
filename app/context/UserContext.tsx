@@ -5,14 +5,27 @@ import { createContext, useContext, useEffect, useState } from "react";
 /* ================= TYPES ================= */
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
-
-export type TaskStatus = "NOT_STARTED" | "DONE";
+export type TaskStatus = "NOT_STARTED" | "IN_PROGRESS" | "DONE";
+export type TaskCategory =
+  | "SOP"
+  | "TEST"
+  | "FINANCE"
+  | "PORTAL"
+  | "VISA"
+  | "OTHER";
 
 export type Task = {
   id: string;
   title: string;
+
   status: TaskStatus;
   risk: RiskLevel;
+  priority: number;
+  category: TaskCategory;
+
+  // ✅ execution intelligence
+  deadline?: string; // ISO date string
+  dependsOn?: string[];
 };
 
 export type Profile = {
@@ -49,6 +62,7 @@ type UserContextType = {
   stage: Stage;
   confidence: number;
   risk: RiskLevel;
+
   lockedUniversity: University | null;
   tasks: Task[];
 
@@ -71,13 +85,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     useState<University | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  /* ===== Confidence Decay (Inactivity) ===== */
+  /* ================= CONFIDENCE DECAY ================= */
   useEffect(() => {
     if (stage !== 4) return;
 
     const timer = setInterval(() => {
       setConfidence((c) => Math.max(30, c - 1));
-    }, 60000); // every minute
+    }, 60_000); // every minute
 
     return () => clearInterval(timer);
   }, [stage]);
@@ -95,25 +109,37 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setLockedUniversity(uni);
     setStage(4);
     setConfidence(60);
+    setRisk("HIGH");
 
+    // ✅ execution-ready tasks
     setTasks([
       {
-        id: "sop",
+        id: "sop-final",
         title: "Finalize Statement of Purpose",
         status: "NOT_STARTED",
         risk: "HIGH",
+        priority: 1,
+        category: "SOP",
+        deadline: futureDate(14),
       },
       {
-        id: "ielts",
+        id: "ielts-submit",
         title: "Submit IELTS Score",
         status: "NOT_STARTED",
         risk: "MEDIUM",
+        priority: 2,
+        category: "TEST",
+        deadline: futureDate(21),
       },
       {
-        id: "fee",
+        id: "application-fee",
         title: "Pay Application Fee",
         status: "NOT_STARTED",
         risk: "HIGH",
+        priority: 1,
+        category: "PORTAL",
+        deadline: futureDate(7),
+        dependsOn: ["sop-final"],
       },
     ]);
   };
@@ -122,14 +148,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setLockedUniversity(null);
     setTasks([]);
     setStage(2);
+    setRisk("MEDIUM");
   };
 
   const completeTask = (taskId: string) => {
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === taskId ? { ...t, status: "DONE" } : t
+        t.id === taskId
+          ? { ...t, status: "DONE" }
+          : t
       )
     );
+
     setConfidence((c) => Math.min(100, c + 8));
   };
 
@@ -151,6 +181,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       {children}
     </UserContext.Provider>
   );
+}
+
+/* ================= HELPERS ================= */
+
+function futureDate(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString();
 }
 
 export const useUser = () => useContext(UserContext);
