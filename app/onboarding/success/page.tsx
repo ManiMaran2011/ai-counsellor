@@ -6,118 +6,21 @@ export default function OnboardingSuccess() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[#f5f7f8] text-[#0d161c]">
-      {/* Header */}
-      <header className="flex items-center justify-between border-b border-[#e7eef4] bg-white px-10 py-3 sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <div className="size-8 text-primary">
-            <svg fill="currentColor" viewBox="0 0 48 48">
-              <path d="M24 45.8096C19.6865 45.8096 15.4698 44.5305 11.8832 42.134C8.29667 39.7376 5.50128 36.3314 3.85056 32.3462C2.19985 28.361 1.76794 23.9758 2.60947 19.7452C3.451 15.5145 5.52816 11.6284 8.57829 8.5783C11.6284 5.52817 15.5145 3.45101 19.7452 2.60948C23.9758 1.76795 28.361 2.19986 32.3462 3.85057C36.3314 5.50129 39.7376 8.29668 42.134 11.8833C44.5305 15.4698 45.8096 19.6865 45.8096 24L24 24L24 45.8096Z" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-bold tracking-tight">
-            AI Counsellor
-          </h2>
-        </div>
-      </header>
-
-      {/* Main */}
-      <main className="flex flex-col items-center py-12 px-4">
-        <div className="max-w-5xl w-full">
-          {/* Hero */}
-          <div className="bg-primary/10 border border-primary/20 rounded-2xl min-h-[200px] flex items-center justify-center mb-10 relative">
-            <span className="material-symbols-outlined text-primary text-8xl opacity-40">
-              school
-            </span>
-          </div>
-
-          {/* Headline */}
-          <div className="text-center mb-10">
-            <h1 className="text-4xl font-bold mb-3">
-              Congratulations! 🎓
-            </h1>
-            <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-              Your profile is complete. Your AI Counsellor is now ready
-              to guide your university decisions and application journey.
-            </p>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <StatCard
-              icon="account_balance"
-              title="University Matching"
-              value="Unlocked"
-              subtitle="Dream, Target & Safe universities"
-            />
-            <StatCard
-              icon="psychology"
-              title="AI Reasoning"
-              value="Active"
-              subtitle="Profile-based explanations & risks"
-            />
-            <StatCard
-              icon="checklist"
-              title="Execution Tasks"
-              value="Ready"
-              subtitle="Auto-generated when you commit"
-            />
-          </div>
-
-          {/* CTA */}
-          <div className="flex flex-col items-center gap-6">
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="w-full max-w-md h-14 bg-primary text-white text-lg font-bold rounded-xl shadow-lg shadow-primary/25 hover:bg-primary/90"
-            >
-              View My Personalized Dashboard
-            </button>
-
-            <button className="flex items-center gap-2 text-primary font-semibold hover:underline">
-              <span className="material-symbols-outlined">
-                support_agent
-              </span>
-              Talk to an Expert Counselor
-            </button>
-          </div>
-
-          {/* Footer */}
-          <footer className="mt-16 text-center text-slate-500 italic">
-            ❤️ Your journey continues — one decision at a time.
-          </footer>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-/* ---------- Helper ---------- */
-
-function StatCard({
-  icon,
-  title,
-  value,
-  subtitle,
-}: {
-  icon: string;
-  title: string;
-  value: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="rounded-xl p-6 bg-white border border-[#cedde8] shadow-sm">
-      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
-        <span className="material-symbols-outlined">
-          {icon}
-        </span>
+    <main className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="bg-white p-10 rounded-xl shadow-xl text-center space-y-4">
+        <h1 className="text-3xl font-black">
+          🎉 Profile Complete!
+        </h1>
+        <p className="text-slate-500">
+          Your AI counsellor is ready to guide you.
+        </p>
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="bg-primary text-white px-6 py-3 rounded-lg font-bold"
+        >
+          Go to Dashboard
+        </button>
       </div>
-      <p className="font-semibold">{title}</p>
-      <p className="text-primary text-2xl font-bold">
-        {value}
-      </p>
-      <p className="text-sm text-slate-500">
-        {subtitle}
-      </p>
-    </div>
+    </main>
   );
 }
