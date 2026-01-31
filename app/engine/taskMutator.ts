@@ -1,11 +1,14 @@
 // app/engine/taskMutator.ts
 
-import type { ReasoningOutput } from "./aiReasoner";
-import type { Task } from "@/app/context/UserContext";
+import { Task, RiskLevel } from "@/app/context/UserContext";
+
+export type ReasoningOutput = {
+  risks: string[];
+};
 
 /**
- * Mutates tasks based on AI reasoning output.
- * This is rule-based, NOT LLM-driven.
+ * Mutate task list based on AI reasoning signals.
+ * Keeps Task shape minimal and consistent.
  */
 export function mutateTasks(
   existingTasks: Task[],
@@ -13,64 +16,54 @@ export function mutateTasks(
 ): Task[] {
   const tasks = [...existingTasks];
 
-  // Helper
   const hasTask = (id: string) =>
     tasks.some((t) => t.id === id);
 
-  /* ================================
-     RULE 1: SOP RISK → SOP TASK
-  ================================ */
+  /* ================= SOP RISK ================= */
+
   if (
     aiInsight.risks.some((r) =>
       r.toLowerCase().includes("sop")
     ) &&
-    !hasTask("sop-final")
+    !hasTask("sop")
   ) {
     tasks.push({
-      id: "sop-final",
+      id: "sop",
       title: "Finalize Statement of Purpose",
-      category: "SOP",
       status: "NOT_STARTED",
-      priority: 1,
       risk: "HIGH",
     });
   }
 
-  /* ================================
-     RULE 2: IELTS RISK → TEST TASK
-  ================================ */
+  /* ================= IELTS RISK ================= */
+
   if (
     aiInsight.risks.some((r) =>
       r.toLowerCase().includes("ielts")
     ) &&
-    !hasTask("ielts-submit")
+    !hasTask("ielts")
   ) {
     tasks.push({
-      id: "ielts-submit",
+      id: "ielts",
       title: "Submit IELTS Score",
-      category: "TEST",
       status: "NOT_STARTED",
-      priority: 2,
-      risk: "HIGH",
+      risk: "MEDIUM",
     });
   }
 
-  /* ================================
-     RULE 3: BUDGET RISK → FINANCE TASK
-  ================================ */
+  /* ================= FINANCIAL RISK ================= */
+
   if (
     aiInsight.risks.some((r) =>
       r.toLowerCase().includes("budget")
     ) &&
-    !hasTask("bank-proof")
+    !hasTask("finance-proof")
   ) {
     tasks.push({
-      id: "bank-proof",
+      id: "finance-proof",
       title: "Prepare Financial Proof",
-      category: "FINANCE",
       status: "NOT_STARTED",
-      priority: 2,
-      risk: "MEDIUM",
+      risk: "HIGH",
     });
   }
 
