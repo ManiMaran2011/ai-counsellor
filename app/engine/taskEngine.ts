@@ -1,53 +1,38 @@
 // app/engine/taskEngine.ts
 
-import { Task, Profile, University, RiskLevel } from "@/app/context/UserContext";
+import { Task, RiskLevel, TaskCategory } from "@/app/context/UserContext";
 
 /**
- * Generate execution tasks after a university is locked
+ * Generates initial execution tasks
+ * Engines later will enrich / mutate these
  */
-export function generateTasks({
-  profile,
-  university,
-  existingTasks = [],
-}: {
-  profile: Profile;
-  university: University;
-  existingTasks?: Task[];
-}): Task[] {
+export function generateInitialTasks(): Task[] {
   const tasks: Task[] = [
     {
-      id: "sop",
+      id: "sop-final",
       title: "Finalize Statement of Purpose",
       status: "NOT_STARTED",
       risk: "HIGH",
+      category: "SOP",
+      priority: 1,
     },
     {
-      id: "ielts",
+      id: "ielts-submit",
       title: "Submit IELTS Score",
       status: "NOT_STARTED",
       risk: "MEDIUM",
+      category: "TEST",
+      priority: 2,
     },
     {
-      id: "fee",
+      id: "application-fee",
       title: "Pay Application Fee",
       status: "NOT_STARTED",
       risk: "HIGH",
+      category: "PORTAL",
+      priority: 3,
     },
   ];
 
-  return sortTasksByRisk(tasks);
-}
-
-/* ================= HELPERS ================= */
-
-function riskWeight(risk: RiskLevel): number {
-  if (risk === "HIGH") return 1;
-  if (risk === "MEDIUM") return 2;
-  return 3;
-}
-
-function sortTasksByRisk(tasks: Task[]): Task[] {
-  return [...tasks].sort(
-    (a, b) => riskWeight(a.risk) - riskWeight(b.risk)
-  );
+  return tasks;
 }
