@@ -6,24 +6,17 @@ import { useUser } from "@/app/context/UserContext";
 
 export default function Step3Academics() {
   const router = useRouter();
-  const { profile, updateProfile } = useUser();
+  const { updateProfile } = useUser();
 
-  /* ================= LOCAL UI STATE ================= */
+  /* ================= UI-ONLY STATE ================= */
 
-  // UI-only (not persisted yet)
   const [institution, setInstitution] = useState("");
+  const [qualification, setQualification] = useState("Bachelor's Degree");
+  const [gpa, setGpa] = useState("");
   const [gpaScale, setGpaScale] = useState("Out of 10.0");
+  const [gradYear, setGradYear] = useState("2025");
   const [backlogs, setBacklogs] = useState(false);
   const [gap, setGap] = useState(false);
-
-  // ✅ Persisted fields (Profile-safe)
-  const [degree, setDegree] = useState(
-    profile?.academics?.degree ?? "Bachelor's Degree"
-  );
-  const [gpa, setGpa] = useState(profile?.academics?.gpa ?? "");
-  const [gradYear, setGradYear] = useState(
-    profile?.academics?.graduationYear ?? "2025"
-  );
 
   /* ================= UI ================= */
 
@@ -42,9 +35,7 @@ export default function Step3Academics() {
               <path d="M24 45.8096C19.6865 45.8096 15.4698 44.5305 11.8832 42.134C8.29667 39.7376 5.50128 36.3314 3.85056 32.3462C2.19985 28.361 1.76794 23.9758 2.60947 19.7452C3.451 15.5145 5.52816 11.6284 8.57829 8.5783C11.6284 5.52817 15.5145 3.45101 19.7452 2.60948C23.9758 1.76795 28.361 2.19986 32.3462 3.85057C36.3314 5.50129 39.7376 8.29668 42.134 11.8833C44.5305 15.4698 45.8096 19.6865 45.8096 24L24 24L24 45.8096Z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold uppercase">
-            AI Counsellor
-          </h2>
+          <h2 className="text-xl font-bold">AI Counsellor</h2>
         </div>
 
         <p className="text-primary font-semibold text-sm uppercase tracking-widest mb-2">
@@ -54,122 +45,83 @@ export default function Step3Academics() {
         <h1 className="text-4xl font-bold mb-3">
           Tell us about your academics
         </h1>
+
         <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-          This helps us evaluate your eligibility across universities.
+          This helps us assess eligibility. You can refine this later.
         </p>
       </header>
 
       {/* Main */}
       <main className="max-w-5xl mx-auto px-6 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          {/* Academics */}
+          {/* Schooling */}
           <section className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
-              <span className="material-symbols-outlined text-primary">
-                school
-              </span>
-              Education & GPA
-            </h3>
+            <h3 className="text-xl font-bold mb-6">Schooling & GPA</h3>
 
             <div className="space-y-6">
-              {/* Institution (UI only) */}
-              <div>
-                <label className="text-sm font-semibold">
-                  Institution Name
-                </label>
+              <input
+                value={institution}
+                onChange={(e) => setInstitution(e.target.value)}
+                placeholder="Institution Name"
+                className="w-full rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
+              />
+
+              <select
+                value={qualification}
+                onChange={(e) => setQualification(e.target.value)}
+                className="w-full rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
+              >
+                <option>Bachelor's Degree</option>
+                <option>Master's Degree</option>
+                <option>High School</option>
+                <option>Doctorate</option>
+              </select>
+
+              <div className="grid grid-cols-2 gap-3">
                 <input
-                  value={institution}
-                  onChange={(e) => setInstitution(e.target.value)}
-                  className="mt-2 w-full rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
-                  placeholder="University or college name"
+                  value={gpa}
+                  onChange={(e) => setGpa(e.target.value)}
+                  placeholder="GPA / Percentage"
+                  className="rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
                 />
-              </div>
-
-              {/* Degree (persisted) */}
-              <div>
-                <label className="text-sm font-semibold">
-                  Highest Qualification
-                </label>
                 <select
-                  value={degree}
-                  onChange={(e) => setDegree(e.target.value)}
-                  className="mt-2 w-full rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
+                  value={gpaScale}
+                  onChange={(e) => setGpaScale(e.target.value)}
+                  className="rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
                 >
-                  <option>Bachelor's Degree</option>
-                  <option>Master's Degree</option>
-                  <option>High School</option>
-                  <option>Doctorate</option>
+                  <option>Out of 10.0</option>
+                  <option>Out of 4.0</option>
+                  <option>Percentage (%)</option>
                 </select>
-              </div>
-
-              {/* GPA (persisted) */}
-              <div>
-                <label className="text-sm font-semibold">
-                  GPA / Percentage
-                </label>
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  <input
-                    value={gpa}
-                    onChange={(e) => setGpa(e.target.value)}
-                    className="rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
-                    placeholder="e.g. 8.4"
-                  />
-                  <select
-                    value={gpaScale}
-                    onChange={(e) => setGpaScale(e.target.value)}
-                    className="rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
-                  >
-                    <option>Out of 10.0</option>
-                    <option>Out of 4.0</option>
-                    <option>Percentage (%)</option>
-                  </select>
-                </div>
               </div>
             </div>
           </section>
 
-          {/* Academic Record */}
+          {/* Record */}
           <section className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
-              <span className="material-symbols-outlined text-primary">
-                history_edu
-              </span>
-              Academic Record
-            </h3>
+            <h3 className="text-xl font-bold mb-6">Academic Record</h3>
 
-            <div className="space-y-8">
-              {/* Graduation Year (persisted) */}
-              <div>
-                <label className="text-sm font-semibold">
-                  Year of Graduation
-                </label>
-                <select
-                  value={gradYear}
-                  onChange={(e) => setGradYear(e.target.value)}
-                  className="mt-2 w-full rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
-                >
-                  {["2024", "2025", "2026", "2027", "2028"].map((y) => (
-                    <option key={y}>{y}</option>
-                  ))}
-                </select>
-              </div>
+            <select
+              value={gradYear}
+              onChange={(e) => setGradYear(e.target.value)}
+              className="w-full rounded-lg border-slate-200 bg-slate-50 h-11 px-4 mb-6"
+            >
+              {["2024", "2025", "2026", "2027", "2028"].map((y) => (
+                <option key={y}>{y}</option>
+              ))}
+            </select>
 
-              {/* Backlogs (UI only) */}
-              <ToggleRow
-                label="Any active backlogs?"
-                description="Includes current subjects"
-                value={backlogs}
-                onChange={setBacklogs}
-              />
+            <ToggleRow
+              label="Any active backlogs?"
+              value={backlogs}
+              onChange={setBacklogs}
+            />
 
-              {/* Gap (UI only) */}
-              <ToggleRow
-                label="Any education gaps?"
-                description="More than a year?"
-                value={gap}
-                onChange={setGap}
-              />
-            </div>
+            <ToggleRow
+              label="Any education gaps?"
+              value={gap}
+              onChange={setGap}
+            />
           </section>
         </div>
 
@@ -177,29 +129,19 @@ export default function Step3Academics() {
         <footer className="flex flex-col items-center gap-6">
           <button
             onClick={() => {
-              // ✅ SAFE, CONTRACT-VALID UPDATE
-              updateProfile({
-                academics: {
-                  degree,
-                  gpa,
-                  graduationYear: gradYear,
-                },
-              });
-
+              // ✅ No academics written to Profile (by design)
+              updateProfile({});
               router.push("/onboarding/step4");
             }}
-            className="w-full max-w-sm bg-primary text-white py-4 px-8 rounded-xl font-bold text-lg shadow-xl hover:bg-primary/90"
+            className="w-full max-w-sm bg-primary text-white py-4 px-8 rounded-xl font-bold text-lg shadow-xl"
           >
             Next: Final Details
           </button>
 
           <button
             onClick={() => router.push("/onboarding/step2")}
-            className="text-slate-400 text-sm font-medium hover:text-slate-600 flex items-center gap-1"
+            className="text-slate-400 text-sm"
           >
-            <span className="material-symbols-outlined">
-              arrow_back
-            </span>
             Back
           </button>
         </footer>
@@ -208,29 +150,24 @@ export default function Step3Academics() {
   );
 }
 
-/* ================= HELPER ================= */
+/* ---------- Helper ---------- */
 
 function ToggleRow({
   label,
-  description,
   value,
   onChange,
 }: {
   label: string;
-  description: string;
   value: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-100">
-      <div>
-        <p className="text-sm font-bold">{label}</p>
-        <p className="text-xs text-slate-500">{description}</p>
-      </div>
-      <div className="flex gap-1 bg-white rounded-lg border border-slate-200 p-1">
+    <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+      <p className="text-sm font-bold">{label}</p>
+      <div className="flex gap-1 bg-white rounded-lg border p-1">
         <button
           onClick={() => onChange(false)}
-          className={`px-4 py-1.5 text-xs font-bold rounded-md ${
+          className={`px-4 py-1 text-xs font-bold rounded ${
             !value ? "bg-primary text-white" : ""
           }`}
         >
@@ -238,7 +175,7 @@ function ToggleRow({
         </button>
         <button
           onClick={() => onChange(true)}
-          className={`px-4 py-1.5 text-xs font-bold rounded-md ${
+          className={`px-4 py-1 text-xs font-bold rounded ${
             value ? "bg-primary text-white" : ""
           }`}
         >

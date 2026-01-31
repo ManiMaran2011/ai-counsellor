@@ -2,17 +2,30 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-/* ================= TYPES ================= */
+/* ===================== TYPES ===================== */
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 
 export type TaskStatus = "NOT_STARTED" | "DONE";
+
+export type TaskCategory =
+  | "SOP"
+  | "TEST"
+  | "FINANCE"
+  | "PORTAL"
+  | "VISA"
+  | "OTHER";
 
 export type Task = {
   id: string;
   title: string;
   status: TaskStatus;
   risk: RiskLevel;
+
+  // 🔑 Required by engines (added once, no more churn)
+  category: TaskCategory;
+  priority: number;
+  dependsOn?: string[];
 };
 
 export type Profile = {
@@ -34,6 +47,13 @@ export type Profile = {
     gre: string;
     sop: string;
   };
+
+  // 🔑 Engines + Gemini depend on this
+  academics?: {
+    degree?: string;
+    gpa?: string;
+    graduationYear?: string;
+  };
 };
 
 export type University = {
@@ -45,7 +65,6 @@ export type University = {
 type Stage = 1 | 2 | 3 | 4;
 
 type UserContextType = {
-  /* ===== STATE ===== */
   profile: Profile | null;
   stage: Stage;
   confidence: number;
@@ -53,39 +72,25 @@ type UserContextType = {
   lockedUniversity: University | null;
   tasks: Task[];
 
-  /* ===== ACTIONS ===== */
-  updateProfile: (partial: Partial<Profile>) => void;
+  // onboarding
+  updateProfile: (data: Partial<Profile>) => void;
   completeOnboarding: (profile: Profile) => void;
 
+  // execution
   lockUniversity: (uni: University) => void;
   unlockUniversity: () => void;
-
   completeTask: (taskId: string) => void;
 };
 
-/* ================= CONTEXT ================= */
+/* ===================== CONTEXT ===================== */
 
 const UserContext = createContext<UserContextType>(null as any);
 
-const emptyProfile: Profile = {
-  name: "",
-  email: "",
-  goals: {
-    targetDegree: "",
-    countries: [],
-  },
-  budget: {
-    annualINR: "",
-    funding: "",
-  },
-  readiness: {
-    ielts: "",
-    gre: "",
-    sop: "",
-  },
-};
-
-export function UserProvider({ children }: { children: React.ReactNode }) {
+export function UserProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stage, setStage] = useState<Stage>(1);
   const [confidence, setConfidence] = useState(70);
@@ -94,70 +99,84 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     useState<University | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  /* ===== Confidence Decay (Execution only) ===== */
+  /* ================= CONFIDENCE DECAY ================= */
+
   useEffect(() => {
     if (stage !== 4) return;
 
     const timer = setInterval(() => {
       setConfidence((c) => Math.max(30, c - 1));
-    }, 60000);
+    }, 60_000); // every minute
 
     return () => clearInterval(timer);
   }, [stage]);
 
   /* ================= ACTIONS ================= */
 
-  // 🔌 Used by onboarding Step 1–3
-  const updateProfile = (partial: Partial<Profile>) => {
-    setProfile((prev) => ({
-      ...(prev ?? emptyProfile),
-      ...partial,
-      goals: {
-        ...(prev?.goals ?? emptyProfile.goals),
-        ...(partial.goals ?? {}),
-      },
-      budget: {
-        ...(prev?.budget ?? emptyProfile.budget),
-        ...(partial.budget ?? {}),
-      },
-      readiness: {
-        ...(prev?.readiness ?? emptyProfile.readiness),
-        ...(partial.readiness ?? {}),
-      },
-    }));
+  const updateProfile = (data: Partial<Profile>) => {
+    setProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            ...data,
+            goals: {
+              ...prev.goals,
+              ...data.goals,
+            },
+            budget: {
+              ...prev.budget,
+              ...data.budget,
+            },
+            readiness: {
+              ...prev.readiness,
+              ...data.readiness,
+            },
+            academics: {
+              ...prev.academics,
+              ...data.academics,
+            },
+          }
+        : (data as Profile)
+    );
   };
 
-  // 🔒 FSM GATE — ONLY CALLED ON STEP 4
-  const completeOnboarding = (finalProfile: Profile) => {
-    setProfile(finalProfile);
-    setStage(2);
+  const completeOnboarding = (data: Profile) => {
+    setProfile(data);
+    setStage(2); // 🔓 Discovery stage
     setConfidence(75);
     setRisk("MEDIUM");
   };
 
   const lockUniversity = (uni: University) => {
     setLockedUniversity(uni);
-    setStage(4);
+    setStage(4); // 🚀 Execution
     setConfidence(60);
 
+    // 🔧 TEMP tasks (engines will replace later)
     setTasks([
       {
-        id: "sop",
+        id: "sop-final",
         title: "Finalize Statement of Purpose",
         status: "NOT_STARTED",
         risk: "HIGH",
+        category: "SOP",
+        priority: 1,
       },
       {
-        id: "ielts",
+        id: "ielts-submit",
         title: "Submit IELTS Score",
         status: "NOT_STARTED",
         risk: "MEDIUM",
+        category: "TEST",
+        priority: 2,
       },
       {
-        id: "fee",
+        id: "application-fee",
         title: "Pay Application Fee",
         status: "NOT_STARTED",
         risk: "HIGH",
+        category: "PORTAL",
+        priority: 3,
       },
     ]);
   };
