@@ -1,23 +1,10 @@
 // app/engine/taskEngine.ts
 
-import { TASK_TEMPLATES } from "./taskTemplates";
-import type {
-  Profile,
-  University,
-  Task,
-  RiskLevel,
-} from "@/app/context/UserContext";
+import { Task, Profile, University, RiskLevel } from "@/app/context/UserContext";
 
-/* ================= RISK LOGIC ================= */
-
-function inferTaskRisk(priority: number): RiskLevel {
-  if (priority <= 1) return "HIGH";
-  if (priority === 2) return "MEDIUM";
-  return "LOW";
-}
-
-/* ================= TASK GENERATION ================= */
-
+/**
+ * Generate execution tasks after a university is locked
+ */
 export function generateTasks({
   profile,
   university,
@@ -27,23 +14,40 @@ export function generateTasks({
   university: University;
   existingTasks?: Task[];
 }): Task[] {
-  const tasks: Task[] = TASK_TEMPLATES
-    .filter((tpl) => tpl.requiredIf(profile, university))
-    .map((tpl) => {
-      const existing = existingTasks.find(
-        (t) => t.id === tpl.id
-      );
+  const tasks: Task[] = [
+    {
+      id: "sop",
+      title: "Finalize Statement of Purpose",
+      status: "NOT_STARTED",
+      risk: "HIGH",
+    },
+    {
+      id: "ielts",
+      title: "Submit IELTS Score",
+      status: "NOT_STARTED",
+      risk: "MEDIUM",
+    },
+    {
+      id: "fee",
+      title: "Pay Application Fee",
+      status: "NOT_STARTED",
+      risk: "HIGH",
+    },
+  ];
 
-      return {
-        id: tpl.id,
-        title: tpl.title,
-        category: tpl.category,           // ✅ FIX
-        priority: tpl.priority,           // ✅ FIX
-        status: existing?.status ?? "NOT_STARTED",
-        risk: inferTaskRisk(tpl.priority), // ✅ FIX
-      };
-    });
+  return sortTasksByRisk(tasks);
+}
 
-  // Lower priority number = higher urgency
-  return tasks.sort((a, b) => a.priority - b.priority);
+/* ================= HELPERS ================= */
+
+function riskWeight(risk: RiskLevel): number {
+  if (risk === "HIGH") return 1;
+  if (risk === "MEDIUM") return 2;
+  return 3;
+}
+
+function sortTasksByRisk(tasks: Task[]): Task[] {
+  return [...tasks].sort(
+    (a, b) => riskWeight(a.risk) - riskWeight(b.risk)
+  );
 }
