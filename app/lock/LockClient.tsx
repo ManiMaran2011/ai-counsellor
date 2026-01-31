@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useUser } from "@/app/context/UserContext";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LockClient({
@@ -10,7 +10,6 @@ export default function LockClient({
   university: {
     id: string;
     name: string;
-    program?: string;
   };
 }) {
   const router = useRouter();
@@ -18,14 +17,12 @@ export default function LockClient({
   const [error, setError] = useState(false);
 
   const handleLock = () => {
-    const success = lockUniversity(university, []); // ✅ FIX
-
-    if (!success) {
+    try {
+      lockUniversity(university); // ✅ ONLY ONE ARG
+      router.push("/execution");
+    } catch {
       setError(true);
-      return;
     }
-
-    router.push("/execution");
   };
 
   return (
@@ -44,8 +41,7 @@ export default function LockClient({
               University already locked
             </h2>
             <p className="text-slate-500 mb-4">
-              You can lock only one university at a time.
-              Unlock your current choice to proceed.
+              Unlock your current university to proceed.
             </p>
             <button
               onClick={() => setError(false)}
