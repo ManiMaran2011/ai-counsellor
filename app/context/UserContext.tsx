@@ -2,17 +2,21 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-/* ================= TYPES ================= */
+/* ================= CORE TYPES ================= */
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
-export type TaskStatus = "NOT_STARTED" | "IN_PROGRESS" | "DONE";
+
+export type TaskStatus = "NOT_STARTED" | "DONE";
+
 export type TaskCategory =
   | "SOP"
   | "TEST"
   | "FINANCE"
   | "PORTAL"
   | "VISA"
-  | "OTHER";
+  | "CORE";
+
+/* ================= TASK ================= */
 
 export type Task = {
   id: string;
@@ -20,13 +24,14 @@ export type Task = {
 
   status: TaskStatus;
   risk: RiskLevel;
-  priority: number;
-  category: TaskCategory;
 
-  // ✅ execution intelligence
-  deadline?: string; // ISO date string
+  category: TaskCategory;
+  priority: number; // lower = more important
+
   dependsOn?: string[];
 };
+
+/* ================= PROFILE ================= */
 
 export type Profile = {
   name: string;
@@ -49,17 +54,24 @@ export type Profile = {
   };
 };
 
+/* ================= UNIVERSITY ================= */
+
 export type University = {
   id: string;
   name: string;
   category?: "DREAM" | "TARGET" | "SAFE";
 };
 
+/* ================= FSM ================= */
+
 type Stage = 1 | 2 | 3 | 4;
+
+/* ================= CONTEXT TYPE ================= */
 
 type UserContextType = {
   profile: Profile | null;
   stage: Stage;
+
   confidence: number;
   risk: RiskLevel;
 
@@ -79,19 +91,23 @@ const UserContext = createContext<UserContextType>(null as any);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stage, setStage] = useState<Stage>(1);
+
   const [confidence, setConfidence] = useState(70);
   const [risk, setRisk] = useState<RiskLevel>("MEDIUM");
+
   const [lockedUniversity, setLockedUniversity] =
     useState<University | null>(null);
+
   const [tasks, setTasks] = useState<Task[]>([]);
 
   /* ================= CONFIDENCE DECAY ================= */
+
   useEffect(() => {
     if (stage !== 4) return;
 
     const timer = setInterval(() => {
       setConfidence((c) => Math.max(30, c - 1));
-    }, 60_000); // every minute
+    }, 60_000);
 
     return () => clearInterval(timer);
   }, [stage]);
@@ -109,37 +125,33 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setLockedUniversity(uni);
     setStage(4);
     setConfidence(60);
-    setRisk("HIGH");
+    setRisk("MEDIUM");
 
-    // ✅ execution-ready tasks
+    // 🔥 INITIAL EXECUTION TASKS
     setTasks([
       {
         id: "sop-final",
         title: "Finalize Statement of Purpose",
         status: "NOT_STARTED",
         risk: "HIGH",
-        priority: 1,
         category: "SOP",
-        deadline: futureDate(14),
+        priority: 1,
       },
       {
         id: "ielts-submit",
         title: "Submit IELTS Score",
         status: "NOT_STARTED",
         risk: "MEDIUM",
-        priority: 2,
         category: "TEST",
-        deadline: futureDate(21),
+        priority: 2,
       },
       {
-        id: "application-fee",
-        title: "Pay Application Fee",
+        id: "bank-proof",
+        title: "Prepare Bank Statement",
         status: "NOT_STARTED",
         risk: "HIGH",
+        category: "FINANCE",
         priority: 1,
-        category: "PORTAL",
-        deadline: futureDate(7),
-        dependsOn: ["sop-final"],
       },
     ]);
   };
@@ -148,15 +160,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setLockedUniversity(null);
     setTasks([]);
     setStage(2);
-    setRisk("MEDIUM");
   };
 
   const completeTask = (taskId: string) => {
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === taskId
-          ? { ...t, status: "DONE" }
-          : t
+        t.id === taskId ? { ...t, status: "DONE" } : t
       )
     );
 
@@ -181,14 +190,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       {children}
     </UserContext.Provider>
   );
-}
-
-/* ================= HELPERS ================= */
-
-function futureDate(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString();
 }
 
 export const useUser = () => useContext(UserContext);
