@@ -1,24 +1,12 @@
-// app/engine/escalationEngine.ts
+import { Task } from "@/app/context/UserContext";
 
-import { Task, RiskLevel } from "@/app/context/UserContext";
-
-/**
- * Decide whether the user should be escalated to an expert.
- *
- * Rules:
- * - Any HIGH risk task not completed
- * - Confidence below threshold
- */
-export function shouldEscalateToExpert({
-  tasks,
-  confidence,
-}: {
-  tasks: Task[];
-  confidence: number;
-}): boolean {
-  const hasHighRiskPendingTask = tasks.some(
-    (t) => t.status !== "DONE" && t.risk === "HIGH"
+export function shouldEscalate(
+  confidence: number,
+  tasks: Task[]
+): boolean {
+  const hasCriticalPending = tasks.some(
+    (t) => t.risk === "HIGH" && t.status !== "DONE"
   );
 
-  return hasHighRiskPendingTask && confidence < 60;
+  return confidence < 50 && hasCriticalPending;
 }

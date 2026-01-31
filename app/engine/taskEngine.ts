@@ -1,38 +1,33 @@
-// app/engine/taskEngine.ts
+import { Task, Profile, University } from "@/app/context/UserContext";
 
-import { Task, RiskLevel, TaskCategory } from "@/app/context/UserContext";
+export function generateTasks(
+  profile: Profile,
+  university: University
+): Task[] {
+  const tasks: Task[] = [];
 
-/**
- * Generates initial execution tasks
- * Engines later will enrich / mutate these
- */
-export function generateInitialTasks(): Task[] {
-  const tasks: Task[] = [
-    {
-      id: "sop-final",
-      title: "Finalize Statement of Purpose",
-      status: "NOT_STARTED",
-      risk: "HIGH",
-      category: "SOP",
-      priority: 1,
-    },
-    {
-      id: "ielts-submit",
-      title: "Submit IELTS Score",
+  tasks.push({
+    id: "sop",
+    title: "Finalize Statement of Purpose",
+    status: "NOT_STARTED",
+    risk: "HIGH",
+  });
+
+  if (!profile.readiness.ielts) {
+    tasks.push({
+      id: "ielts",
+      title: "Submit English Test Score",
       status: "NOT_STARTED",
       risk: "MEDIUM",
-      category: "TEST",
-      priority: 2,
-    },
-    {
-      id: "application-fee",
-      title: "Pay Application Fee",
-      status: "NOT_STARTED",
-      risk: "HIGH",
-      category: "PORTAL",
-      priority: 3,
-    },
-  ];
+    });
+  }
+
+  tasks.push({
+    id: "fee",
+    title: "Pay Application Fee",
+    status: "NOT_STARTED",
+    risk: "HIGH",
+  });
 
   return tasks;
 }

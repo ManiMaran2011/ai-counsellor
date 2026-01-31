@@ -1,66 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useUser } from "@/app/context/UserContext";
+import { counsellorRecommendation } from "@/app/engine/counsellorEngine";
 
-export default function AICounsellor() {
+export default function AICounsellor({
+  universities,
+}: {
+  universities: any[];
+}) {
   const {
+    profile,
     confidence,
+    lockedUniversity,
     lockUniversity,
   } = useUser();
 
-  const [confirm, setConfirm] = useState(false);
+  const [message, setMessage] = useState("");
+  const [recommend, setRecommend] = useState<any>(null);
+
+  useEffect(() => {
+    if (!profile || lockedUniversity) return;
+
+    counsellorRecommendation(profile, confidence, universities).then(
+      (res) => {
+        setMessage(res.message);
+        setRecommend(res.recommend);
+      }
+    );
+  }, [profile, confidence]);
+
+  if (lockedUniversity) return null;
 
   return (
-    <section className="bg-white border rounded-xl p-5 space-y-4">
-      <h3 className="font-bold text-lg">AI Counsellor</h3>
+    <div className="bg-white p-6 rounded-2xl border">
+      <h3 className="font-bold mb-2">AI Counsellor</h3>
+      <p className="text-sm text-slate-600 mb-4">{message}</p>
 
-      <p className="text-sm text-slate-600">
-        Based on your profile strength and risk balance, I recommend
-        committing to a <b>Target university</b>.
-      </p>
-
-      {confidence < 60 && (
-        <div className="bg-red-50 border border-red-200 p-3 rounded-lg text-sm">
-          ⚠️ Your confidence is dropping. Acting now improves outcomes.
-        </div>
-      )}
-
-      {!confirm ? (
+      {recommend && (
         <button
-          onClick={() => setConfirm(true)}
+          onClick={() => lockUniversity(recommend)}
           className="bg-primary text-white px-4 py-2 rounded-lg font-bold"
         >
-          Lock Recommended University
+          Lock {recommend.name}
         </button>
-      ) : (
-        <div className="space-y-3">
-          <p className="text-sm">
-            Lock <b>University of British Columbia</b> and move
-            into execution?
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                lockUniversity({
-                  id: "ubc",
-                  name: "University of British Columbia",
-                  category: "TARGET",
-                });
-              }}
-              className="flex-1 bg-primary text-white py-2 rounded-lg font-bold"
-            >
-              Yes, Lock
-            </button>
-            <button
-              onClick={() => setConfirm(false)}
-              className="flex-1 border py-2 rounded-lg"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
       )}
-    </section>
+    </div>
   );
 }

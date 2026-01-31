@@ -1,75 +1,66 @@
-// app/engine/geminiReasoner.ts
+import { askGemini } from "./geminiClient";
+import type { Profile, University, Task } from "@/app/context/UserContext";
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { Task, Profile } from "@/app/context/UserContext";
+/* ================= UNIVERSITY ================= */
 
-const apiKey = process.env.GEMINI_API_KEY;
-
-if (!apiKey) {
-  console.warn("⚠️ GEMINI_API_KEY not set — using fallback explanations");
-}
-
-const genAI = apiKey
-  ? new GoogleGenerativeAI(apiKey)
-  : null;
-
-const model = genAI
-  ? genAI.getGenerativeModel({ model: "gemini-1.5-pro" })
-  : null;
-
-/* ================= TASK EXPLANATION ================= */
-
-export async function explainTaskWithGemini(
-  task: Task,
+export async function explainUniversityFit(
   profile: Profile,
-  universityName: string
-): Promise<string> {
-  // 🔒 Hard fallback (no API key / build-safe)
-  if (!model) {
-    return fallbackExplanation(task, universityName);
-  }
-
+  university: University,
+  category: "DREAM" | "TARGET" | "SAFE"
+) {
   const prompt = `
-You are an expert study-abroad counsellor.
+You are an overseas education counsellor.
 
-STUDENT PROFILE:
+STUDENT:
 - Target Degree: ${profile.goals.targetDegree}
-- Target Countries: ${profile.goals.countries.join(", ")}
-- Budget (INR/year): ${profile.budget.annualINR}
-- Funding: ${profile.budget.funding}
-- IELTS Status: ${profile.readiness.ielts || "Not provided"}
-- GRE Status: ${profile.readiness.gre || "Not provided"}
-- SOP Status: ${profile.readiness.sop}
+- Countries: ${profile.goals.countries.join(", ")}
+- Budget: ${profile.budget.annualINR} L INR
+- IELTS: ${profile.readiness.ielts || "Not completed"}
+- SOP: ${profile.readiness.sop || "Not ready"}
 
-LOCKED UNIVERSITY:
-${universityName}
+UNIVERSITY:
+- Name: ${university.name}
+- Category: ${category}
 
-CURRENT TASK:
-"${task.title}"
-
-Explain in 2–3 short, clear sentences:
-1. Why this task is important for admission success
-2. What risk increases if the student delays this task
-
-Tone:
-- Calm
-- Professional
-- Supportive
-- Action-oriented
+Explain in 3 bullet points why this university is a ${category} choice.
+Be realistic and honest.
 `;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    return text.trim();
-  } catch (err) {
-    console.error("Gemini task explanation failed:", err);
-    return fallbackExplanation(task, universityName);
-  }
+  return askGemini(prompt);
 }
 
-/* ================= FALLBACK ================= */
+/* ================= TASK ================= */
 
-function fallbackExplanation(task: Task, university: string) {
-  return `This task is essential to keep your application to ${university} on track. Delaying it can increase rejection risk or limit available options, so completing it early strengthens your overall application.`;
+export async function explainTaskImportance(
+  task: Task,
+  university: University
+) {
+  const prompt = `
+Student has locked ${university.name}.
+
+Task: ${task.title}
+Risk Level: ${task.risk}
+
+Explain in 2–3 short lines why this task matters right now.
+`;
+
+  return askGemini(prompt);
+}
+
+/* ================= ESCALATION ================= */
+
+export async function explainEscalation(
+  confidence: number,
+  pendingTasks: string[]
+) {
+  const prompt = `
+A student applying abroad has:
+- Confidence score: ${confidence}
+- Pending high-risk tasks: ${pendingTasks.join(", ")}
+
+Explain briefly why expert guidance is recommended at this stage.
+Tone: calm, supportive, not salesy.
+`;
+
+  return askGemini(prompt);
 }

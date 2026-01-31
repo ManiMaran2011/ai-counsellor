@@ -1,22 +1,16 @@
-type ConfidenceInput = {
-  completedTasks: number;
-  totalTasks: number;
-};
+export function decayConfidence(current: number): number {
+  return Math.max(30, current - 1);
+}
 
-export function calculateConfidence({
-  completedTasks,
-  totalTasks,
-}: ConfidenceInput): number {
-  if (totalTasks === 0) return 20; // base confidence
+export function rewardConfidence(
+  current: number,
+  amount = 8
+): number {
+  return Math.min(100, current + amount);
+}
 
-  const ratio = completedTasks / totalTasks;
-
-  // Base confidence curve
-  let confidence = 20 + ratio * 70;
-
-  // Cap safely
-  if (confidence > 100) confidence = 100;
-  if (confidence < 10) confidence = 10;
-
-  return Math.round(confidence);
+export function confidenceLabel(confidence: number) {
+  if (confidence >= 75) return "STRONG";
+  if (confidence >= 50) return "MODERATE";
+  return "WEAK";
 }

@@ -1,122 +1,197 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { useUser } from "@/app/context/UserContext";
 
+/* ================= MOTION PRESETS ================= */
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const stagger = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+/* ================= PAGE ================= */
+
 export default function DashboardPage() {
+  const router = useRouter();
   const {
     profile,
+    stage,
     confidence,
     risk,
     lockedUniversity,
-    tasks,
-    completeTask,
   } = useUser();
 
   if (!profile) return null;
 
-  const pendingHighRisk = tasks.filter(
-    (t) => t.risk === "HIGH" && t.status !== "DONE"
-  ).length;
-
-  const shouldEscalate =
-    confidence < 45 || pendingHighRisk >= 2;
-
-  /* ================= AI COUNSELLOR REASONING ================= */
-
-  const counsellorMessage = lockedUniversity
-    ? `You’ve locked ${lockedUniversity.name}. Focus on completing critical tasks to keep your application strong.`
-    : `Your profile is ready. The next step is choosing a university aligned with your budget and readiness.`;
-
   return (
     <div className="min-h-screen bg-[#f8fafc] px-6 py-10">
-      <div className="max-w-5xl mx-auto space-y-10">
-        {/* HEADER */}
-        <header>
-          <h1 className="text-3xl font-bold mb-1">
-            Dashboard
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={stagger}
+        className="max-w-6xl mx-auto space-y-10"
+      >
+        {/* ================= ORIENTATION ================= */}
+        <motion.div variants={fadeUp}>
+          <div className="rounded-xl border bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-widest text-slate-400">
+              Your Application Journey
+            </p>
+            <p className="font-semibold text-slate-800">
+              Stage {stage} · Profile completed
+            </p>
+          </div>
+        </motion.div>
+
+        {/* ================= HEADER ================= */}
+        <motion.div variants={fadeUp}>
+          <h1 className="text-4xl font-bold text-charcoal">
+            Welcome back, {profile.name}
           </h1>
-          <p className="text-slate-500">
-            Confidence: {confidence} • Risk:{" "}
+          <p className="text-slate-500 mt-2 max-w-2xl">
+            Here’s where things stand — and what to focus on next.
+          </p>
+        </motion.div>
+
+        {/* ================= STATUS GRID ================= */}
+        <motion.div
+          variants={stagger}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          {/* Profile Summary */}
+          <motion.div
+            variants={fadeUp}
+            className="bg-white rounded-2xl p-6 border shadow-sm"
+          >
+            <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">
+              Profile Summary
+            </p>
+            <p className="font-semibold">{profile.goals.targetDegree}</p>
+            <p className="text-sm text-slate-500">
+              {profile.goals.countries.join(", ")}
+            </p>
+            <p className="text-sm text-slate-500 mt-2">
+              Budget: ₹{profile.budget.annualINR}L
+            </p>
+          </motion.div>
+
+          {/* Confidence Meter */}
+          <motion.div
+            variants={fadeUp}
+            className="bg-white rounded-2xl p-6 border shadow-sm"
+          >
+            <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">
+              Application Strength
+            </p>
+
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-slate-500">Confidence</span>
+              <span className="font-bold">{confidence}%</span>
+            </div>
+
+            <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${confidence}%` }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="h-full bg-primary"
+              />
+            </div>
+
+            <p className="text-xs text-slate-500 mt-2">
+              Improves as tasks are completed
+            </p>
+          </motion.div>
+
+          {/* Risk */}
+          <motion.div
+            variants={fadeUp}
+            className="bg-white rounded-2xl p-6 border shadow-sm"
+          >
+            <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">
+              Risk Level
+            </p>
+
             <span
-              className={
-                risk === "LOW"
-                  ? "text-green-600"
+              className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${
+                risk === "HIGH"
+                  ? "bg-red-100 text-red-700"
                   : risk === "MEDIUM"
-                  ? "text-orange-500"
-                  : "text-red-500"
-              }
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-green-100 text-green-700"
+              }`}
             >
               {risk}
             </span>
-          </p>
-        </header>
 
-        {/* AI COUNSELLOR */}
-        <section className="bg-white p-6 rounded-2xl border shadow-sm">
-          <h2 className="font-bold mb-2">
-            AI Counsellor
-          </h2>
-          <p className="text-slate-600">
-            {counsellorMessage}
-          </p>
-        </section>
-
-        {/* ESCALATION */}
-        {shouldEscalate && (
-          <section className="bg-red-50 border border-red-200 p-6 rounded-2xl">
-            <h3 className="font-bold text-red-700 mb-2">
-              Expert Help Recommended
-            </h3>
-            <p className="text-sm text-red-600 mb-4">
-              Your confidence is dropping and critical tasks are pending.
-              Speaking to an admissions expert now can prevent mistakes.
+            <p className="text-sm text-slate-500 mt-3">
+              Based on deadlines & readiness
             </p>
-            <button className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold">
-              Talk to an Expert
-            </button>
-          </section>
-        )}
+          </motion.div>
+        </motion.div>
 
-        {/* TASKS */}
-        {lockedUniversity && (
-          <section>
-            <h2 className="text-xl font-bold mb-4">
-              Execution Tasks
-            </h2>
+        {/* ================= AI COUNSELLOR ================= */}
+        <motion.div
+          variants={fadeUp}
+          className="bg-white border rounded-2xl p-8 shadow-sm"
+        >
+          <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">
+            AI Counsellor Recommendation
+          </p>
 
-            <ul className="space-y-3">
-              {tasks.map((t) => (
-                <li
-                  key={t.id}
-                  className="bg-white p-4 rounded-xl border flex justify-between items-center"
-                >
-                  <div>
-                    <p className="font-semibold">
-                      {t.title}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      Risk: {t.risk}
-                    </p>
-                  </div>
+          {!lockedUniversity ? (
+            <>
+              <p className="text-lg font-semibold mb-4">
+                You’re ready to shortlist universities.
+              </p>
 
-                  {t.status === "DONE" ? (
-                    <span className="text-green-600 font-bold">
-                      Done
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => completeTask(t.id)}
-                      className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold"
-                    >
-                      Mark Complete
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-      </div>
+              <p className="text-slate-600 mb-6 max-w-2xl">
+                Based on your profile and confidence level, you have a strong
+                chance at at least one Target university.
+              </p>
+
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => router.push("/dashboard/insight")}
+                className="bg-primary text-white px-6 py-3 rounded-xl font-bold"
+              >
+                Discover University Matches →
+              </motion.button>
+            </>
+          ) : (
+            <>
+              <p className="text-lg font-semibold mb-2">
+                Execution mode active
+              </p>
+              <p className="text-slate-600 mb-4">
+                You’ve locked <strong>{lockedUniversity.name}</strong>.
+                Focus on completing tasks to reduce risk.
+              </p>
+
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => router.push("/execution")}
+                className="bg-primary text-white px-6 py-3 rounded-xl font-bold"
+              >
+                Continue Execution →
+              </motion.button>
+            </>
+          )}
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

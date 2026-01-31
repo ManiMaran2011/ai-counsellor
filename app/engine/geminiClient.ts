@@ -1,18 +1,14 @@
-export async function enhanceWithGemini(
-  text: string
-): Promise<string> {
-  try {
-    const res = await fetch("/api/gemini", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-    if (!res.ok) return text;
+const apiKey = process.env.GEMINI_API_KEY!;
 
-    const data = await res.json();
-    return data.text || text;
-  } catch {
-    return text; // graceful fallback
-  }
+const genAI = new GoogleGenerativeAI(apiKey);
+
+export async function askGemini(prompt: string): Promise<string> {
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+  });
+
+  const result = await model.generateContent(prompt);
+  return result.response.text().trim();
 }
