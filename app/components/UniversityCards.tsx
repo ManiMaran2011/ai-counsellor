@@ -23,8 +23,7 @@ export default function UniversityCards({
         id: uni.id,
         name: uni.name,
         program: profile.goals.targetDegree,
-      },
-      [] // ✅ tasks are generated later in execution stage
+      }
     );
   };
 
