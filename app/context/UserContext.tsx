@@ -55,6 +55,8 @@ export type University = {
 
 type Stage = 1 | 2 | 3 | 4;
 
+/* ================= CONTEXT TYPE ================= */
+
 type UserContextType = {
   profile: Profile | null;
   stage: Stage;
@@ -64,18 +66,35 @@ type UserContextType = {
   confidence: number;
   risk: RiskLevel;
 
+  // 🔹 Onboarding
+  updateProfile: (data: Partial<Profile>) => void;
   completeOnboarding: (profile: Profile) => void;
+
+  // 🔹 Commitment / Execution
   lockUniversity: (uni: University, tasks: Task[]) => boolean;
   unlockUniversity: () => void;
 
+  // 🔹 Execution mechanics
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
   increaseConfidence: (amount?: number) => void;
   decayConfidence: (amount?: number) => void;
 };
 
-/* ================= CONTEXT ================= */
+/* ================= SETUP ================= */
 
 const UserContext = createContext<UserContextType>(null as any);
+
+const EMPTY_PROFILE: Profile = {
+  name: "",
+  email: "",
+  phone: "",
+  academics: { degree: "" },
+  goals: { targetDegree: "", intake: "", countries: [] },
+  budget: { annualINR: "", funding: "" },
+  readiness: { ielts: "", gre: "", sop: "" },
+};
+
+/* ================= PROVIDER ================= */
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -87,12 +106,21 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [confidence, setConfidence] = useState(40);
   const [risk, setRisk] = useState<RiskLevel>("MEDIUM");
 
-  /* ========== CORE ACTIONS ========== */
+  /* ========== ONBOARDING ========== */
+
+  const updateProfile = (data: Partial<Profile>) => {
+    setProfile((prev) => ({
+      ...(prev ?? EMPTY_PROFILE),
+      ...data,
+    }));
+  };
 
   const completeOnboarding = (data: Profile) => {
     setProfile(data);
     setStage(2);
   };
+
+  /* ========== COMMITMENT ========== */
 
   const lockUniversity = (uni: University, generatedTasks: Task[]) => {
     if (lockedUniversity) return false;
@@ -114,7 +142,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setRisk("MEDIUM");
   };
 
-  /* ========== TASK + CONFIDENCE LOGIC ========== */
+  /* ========== EXECUTION LOGIC ========== */
 
   const updateTaskStatus = (taskId: string, status: TaskStatus) => {
     setTasks((prev) =>
@@ -145,6 +173,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         tasks,
         confidence,
         risk,
+        updateProfile,
         completeOnboarding,
         lockUniversity,
         unlockUniversity,
