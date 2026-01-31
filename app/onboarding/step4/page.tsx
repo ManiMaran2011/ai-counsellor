@@ -10,27 +10,27 @@ export default function Step4FinalDetails() {
 
   if (!profile) return null;
 
-  /* ================= LOCAL STATE ================= */
+  /* ================= UI STATE (NOT ALL IS PERSISTED) ================= */
 
-  const [englishTest, setEnglishTest] = useState("IELTS");
+  const [englishTest, setEnglishTest] = useState("IELTS"); // UI-only
   const [englishScore, setEnglishScore] = useState("");
-  const [examName, setExamName] = useState("");
+  const [examName, setExamName] = useState(""); // UI-only
   const [examScore, setExamScore] = useState("");
 
   const [budget, setBudget] = useState(
-    profile.budget?.annualINR || "25-50"
+    profile.budget?.annualINR ?? "25-50"
   );
   const [funding, setFunding] = useState(
-    profile.budget?.funding || "Personal Savings"
+    profile.budget?.funding ?? "Personal Savings"
   );
 
-  const [intent, setIntent] = useState("standard");
-  const [passport, setPassport] = useState("have");
+  const [intent, setIntent] = useState("standard"); // mapped to SOP readiness
+  const [passport, setPassport] = useState("have"); // UI-only
 
-  /* ================= FINAL SUBMIT ================= */
+  /* ================= FINAL SUBMIT (FSM GATE) ================= */
 
   const handleComplete = () => {
-    const finalProfile = {
+    completeOnboarding({
       ...profile,
       budget: {
         annualINR: budget,
@@ -41,12 +41,8 @@ export default function Step4FinalDetails() {
         gre: examScore,
         sop: intent,
       },
-    };
+    });
 
-    // 🔒 FSM GATE — ONLY PLACE THIS IS CALLED
-    completeOnboarding(finalProfile);
-
-    // 🚀 EXIT ONBOARDING
     router.push("/dashboard");
   };
 
@@ -70,9 +66,7 @@ export default function Step4FinalDetails() {
           <h2 className="text-xl font-bold">AI Counsellor</h2>
         </div>
 
-        <h1 className="text-4xl font-bold mb-3">
-          Almost there!
-        </h1>
+        <h1 className="text-4xl font-bold mb-3">Almost there!</h1>
         <p className="text-slate-500 text-lg max-w-2xl mx-auto">
           Final details before we unlock your personalized dashboard.
         </p>

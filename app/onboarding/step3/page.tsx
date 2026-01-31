@@ -8,20 +8,24 @@ export default function Step3Academics() {
   const router = useRouter();
   const { profile, updateProfile } = useUser();
 
-  // 🔌 Pre-fill from context if user navigates back
-  const [institution, setInstitution] = useState(
-    profile?.academics?.degree ?? ""
-  );
-  const [qualification, setQualification] = useState(
+  /* ================= LOCAL UI STATE ================= */
+
+  // UI-only (not persisted yet)
+  const [institution, setInstitution] = useState("");
+  const [gpaScale, setGpaScale] = useState("Out of 10.0");
+  const [backlogs, setBacklogs] = useState(false);
+  const [gap, setGap] = useState(false);
+
+  // ✅ Persisted fields (Profile-safe)
+  const [degree, setDegree] = useState(
     profile?.academics?.degree ?? "Bachelor's Degree"
   );
   const [gpa, setGpa] = useState(profile?.academics?.gpa ?? "");
-  const [gpaScale, setGpaScale] = useState("Out of 10.0");
   const [gradYear, setGradYear] = useState(
     profile?.academics?.graduationYear ?? "2025"
   );
-  const [backlogs, setBacklogs] = useState(false);
-  const [gap, setGap] = useState(false);
+
+  /* ================= UI ================= */
 
   return (
     <div className="min-h-screen bg-white">
@@ -38,7 +42,7 @@ export default function Step3Academics() {
               <path d="M24 45.8096C19.6865 45.8096 15.4698 44.5305 11.8832 42.134C8.29667 39.7376 5.50128 36.3314 3.85056 32.3462C2.19985 28.361 1.76794 23.9758 2.60947 19.7452C3.451 15.5145 5.52816 11.6284 8.57829 8.5783C11.6284 5.52817 15.5145 3.45101 19.7452 2.60948C23.9758 1.76795 28.361 2.19986 32.3462 3.85057C36.3314 5.50129 39.7376 8.29668 42.134 11.8833C44.5305 15.4698 45.8096 19.6865 45.8096 24L24 24L24 45.8096Z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold italic uppercase">
+          <h2 className="text-xl font-bold uppercase">
             AI Counsellor
           </h2>
         </div>
@@ -46,28 +50,29 @@ export default function Step3Academics() {
         <p className="text-primary font-semibold text-sm uppercase tracking-widest mb-2">
           Step 3 of 4
         </p>
+
         <h1 className="text-4xl font-bold mb-3">
           Tell us about your academics
         </h1>
         <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-          This helps us determine your eligibility for top-tier universities
-          worldwide.
+          This helps us evaluate your eligibility across universities.
         </p>
       </header>
 
       {/* Main */}
       <main className="max-w-5xl mx-auto px-6 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          {/* Schooling */}
+          {/* Academics */}
           <section className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
             <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
               <span className="material-symbols-outlined text-primary">
                 school
               </span>
-              Schooling & GPA
+              Education & GPA
             </h3>
 
             <div className="space-y-6">
+              {/* Institution (UI only) */}
               <div>
                 <label className="text-sm font-semibold">
                   Institution Name
@@ -76,17 +81,18 @@ export default function Step3Academics() {
                   value={institution}
                   onChange={(e) => setInstitution(e.target.value)}
                   className="mt-2 w-full rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
-                  placeholder="University or School name"
+                  placeholder="University or college name"
                 />
               </div>
 
+              {/* Degree (persisted) */}
               <div>
                 <label className="text-sm font-semibold">
                   Highest Qualification
                 </label>
                 <select
-                  value={qualification}
-                  onChange={(e) => setQualification(e.target.value)}
+                  value={degree}
+                  onChange={(e) => setDegree(e.target.value)}
                   className="mt-2 w-full rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
                 >
                   <option>Bachelor's Degree</option>
@@ -96,6 +102,7 @@ export default function Step3Academics() {
                 </select>
               </div>
 
+              {/* GPA (persisted) */}
               <div>
                 <label className="text-sm font-semibold">
                   GPA / Percentage
@@ -105,7 +112,7 @@ export default function Step3Academics() {
                     value={gpa}
                     onChange={(e) => setGpa(e.target.value)}
                     className="rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
-                    placeholder="Score (e.g. 8.4)"
+                    placeholder="e.g. 8.4"
                   />
                   <select
                     value={gpaScale}
@@ -121,7 +128,7 @@ export default function Step3Academics() {
             </div>
           </section>
 
-          {/* Record */}
+          {/* Academic Record */}
           <section className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
             <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
               <span className="material-symbols-outlined text-primary">
@@ -131,6 +138,7 @@ export default function Step3Academics() {
             </h3>
 
             <div className="space-y-8">
+              {/* Graduation Year (persisted) */}
               <div>
                 <label className="text-sm font-semibold">
                   Year of Graduation
@@ -146,7 +154,7 @@ export default function Step3Academics() {
                 </select>
               </div>
 
-              {/* Backlogs */}
+              {/* Backlogs (UI only) */}
               <ToggleRow
                 label="Any active backlogs?"
                 description="Includes current subjects"
@@ -154,7 +162,7 @@ export default function Step3Academics() {
                 onChange={setBacklogs}
               />
 
-              {/* Gap */}
+              {/* Gap (UI only) */}
               <ToggleRow
                 label="Any education gaps?"
                 description="More than a year?"
@@ -169,10 +177,10 @@ export default function Step3Academics() {
         <footer className="flex flex-col items-center gap-6">
           <button
             onClick={() => {
-              // 🔥 WIRING
+              // ✅ SAFE, CONTRACT-VALID UPDATE
               updateProfile({
                 academics: {
-                  degree: qualification,
+                  degree,
                   gpa,
                   graduationYear: gradYear,
                 },
@@ -192,7 +200,7 @@ export default function Step3Academics() {
             <span className="material-symbols-outlined">
               arrow_back
             </span>
-            Back to previous step
+            Back
           </button>
         </footer>
       </main>
@@ -200,7 +208,7 @@ export default function Step3Academics() {
   );
 }
 
-/* ---------- Helper Component ---------- */
+/* ================= HELPER ================= */
 
 function ToggleRow({
   label,

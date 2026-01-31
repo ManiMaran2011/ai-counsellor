@@ -4,32 +4,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useUser } from "@/app/context/UserContext";
 
+/* ================= OPTIONS ================= */
+
 const FIELD_OPTIONS = [
-  {
-    id: "Business",
-    label: "Business",
-    sub: "Management, Finance, Marketing",
-  },
-  {
-    id: "STEM",
-    label: "STEM",
-    sub: "Engineering, Science, Technology",
-  },
-  {
-    id: "Arts",
-    label: "Arts & Humanities",
-    sub: "Design, Media, Literature",
-  },
-  {
-    id: "Law",
-    label: "Law",
-    sub: "Corporate, International, Criminal",
-  },
-  {
-    id: "Medicine",
-    label: "Medicine",
-    sub: "MBBS, Nursing, Public Health",
-  },
+  { id: "Business", label: "Business", sub: "Management, Finance, Marketing" },
+  { id: "STEM", label: "STEM", sub: "Engineering, Science, Technology" },
+  { id: "Arts", label: "Arts & Humanities", sub: "Design, Media, Literature" },
+  { id: "Law", label: "Law", sub: "Corporate, International, Criminal" },
+  { id: "Medicine", label: "Medicine", sub: "MBBS, Nursing, Public Health" },
 ];
 
 const COUNTRY_OPTIONS = [
@@ -41,9 +23,13 @@ const COUNTRY_OPTIONS = [
   "Ireland",
 ];
 
+/* ================= PAGE ================= */
+
 export default function Step2Preferences() {
   const router = useRouter();
   const { profile, updateProfile } = useUser();
+
+  /* ---------- Local UI State ---------- */
 
   const [countries, setCountries] = useState<string[]>(
     profile?.goals?.countries ?? []
@@ -52,6 +38,8 @@ export default function Step2Preferences() {
   const [field, setField] = useState(
     profile?.goals?.targetDegree ?? "Business"
   );
+
+  // UI-ONLY (not persisted yet)
   const [degree, setDegree] = useState("Masters");
 
   const toggleCountry = (country: string) => {
@@ -63,6 +51,8 @@ export default function Step2Preferences() {
   };
 
   const isOtherSelected = countries.includes("Other");
+
+  /* ================= UI ================= */
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -179,7 +169,7 @@ export default function Step2Preferences() {
             </div>
           </div>
 
-          {/* Degree */}
+          {/* Degree (UI-only for now) */}
           <div>
             <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary">
@@ -211,15 +201,19 @@ export default function Step2Preferences() {
         <footer className="flex flex-col items-center gap-6 pt-8 border-t border-slate-100">
           <button
             onClick={() => {
-              const finalCountries = isOtherSelected && otherCountry
-                ? [...countries.filter((c) => c !== "Other"), otherCountry]
-                : countries;
+              const finalCountries =
+                isOtherSelected && otherCountry
+                  ? [
+                      ...countries.filter((c) => c !== "Other"),
+                      otherCountry,
+                    ]
+                  : countries;
 
+              // ✅ ONLY persist what Profile supports
               updateProfile({
                 goals: {
                   countries: finalCountries,
                   targetDegree: field,
-                  intake: profile?.goals?.intake ?? "",
                 },
               });
 
