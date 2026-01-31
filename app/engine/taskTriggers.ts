@@ -2,14 +2,19 @@
 
 import { Task } from "@/app/context/UserContext";
 
+/**
+ * A trigger defines:
+ * - which task completion unlocks something
+ * - which new task gets created
+ */
 export type TaskTrigger = {
   whenCompleted: string;
   creates: Task;
 };
 
 /**
- * Simple task triggers based on task completion.
- * Must obey the core Task contract strictly.
+ * ALL TASK TRIGGERS
+ * Every created task MUST fully satisfy Task type
  */
 export const TASK_TRIGGERS: TaskTrigger[] = [
   {
@@ -19,36 +24,53 @@ export const TASK_TRIGGERS: TaskTrigger[] = [
       title: "Upload SOP PDF to University Portal",
       status: "NOT_STARTED",
       risk: "HIGH",
+      category: "PORTAL",
+      priority: 1,
     },
   },
+
   {
     whenCompleted: "ielts",
     creates: {
-      id: "application-fee",
+      id: "send-ielts-score",
+      title: "Send IELTS Score to University",
+      status: "NOT_STARTED",
+      risk: "MEDIUM",
+      category: "TEST",
+      priority: 2,
+    },
+  },
+
+  {
+    whenCompleted: "bank-proof",
+    creates: {
+      id: "pay-fee",
       title: "Pay University Application Fee",
       status: "NOT_STARTED",
       risk: "HIGH",
+      category: "PORTAL",
+      priority: 1,
     },
   },
 ];
 
 /**
- * Apply triggers when a task is completed
+ * Apply triggers after a task is completed
  */
-export function triggerTasksOnCompletion(
+export function applyTaskTriggers(
   completedTaskId: string,
   existingTasks: Task[]
 ): Task[] {
   const tasks = [...existingTasks];
 
+  const hasTask = (id: string) =>
+    tasks.some((t) => t.id === id);
+
   TASK_TRIGGERS.forEach((trigger) => {
-    if (trigger.whenCompleted !== completedTaskId) return;
-
-    const alreadyExists = tasks.some(
-      (t) => t.id === trigger.creates.id
-    );
-
-    if (!alreadyExists) {
+    if (
+      trigger.whenCompleted === completedTaskId &&
+      !hasTask(trigger.creates.id)
+    ) {
       tasks.push(trigger.creates);
     }
   });
