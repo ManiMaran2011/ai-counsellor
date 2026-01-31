@@ -4,92 +4,110 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useUser } from "@/app/context/UserContext";
 
-type UniversityCard = {
+type UniversityLite = {
   id: string;
   name: string;
   category: "DREAM" | "TARGET" | "SAFE";
-  risk: "LOW" | "MEDIUM" | "HIGH";
-  reason: string;
 };
 
 export default function AICounsellor({
   universities,
 }: {
-  universities: UniversityCard[];
+  universities: UniversityLite[];
 }) {
   const {
     stage,
     confidence,
     lockUniversity,
-    increaseConfidence,
   } = useUser();
 
-  const [confirm, setConfirm] = useState<UniversityCard | null>(
-    null
-  );
+  const [confirm, setConfirm] = useState<UniversityLite | null>(null);
 
-  const target = universities.find(
+  // Pick best TARGET university
+  const targetUni = universities.find(
     (u) => u.category === "TARGET"
   );
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="bg-white border rounded-xl p-6 shadow-sm space-y-4"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="bg-white border rounded-2xl p-5 shadow-sm space-y-4"
     >
+      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="size-10 bg-primary rounded-full flex items-center justify-center text-white">
-          🤖
+          <span className="material-symbols-outlined">
+            smart_toy
+          </span>
         </div>
         <div>
           <p className="font-bold">AI Counsellor</p>
-          <p className="text-xs text-primary">
+          <p className="text-xs text-primary font-semibold uppercase">
             Stage {stage} · Confidence {confidence}%
           </p>
         </div>
       </div>
 
-      <p className="text-sm text-slate-700">
-        Based on your profile, I recommend locking a
-        <b> Target university</b> to maximize acceptance while
-        minimizing risk.
-      </p>
+      {/* Message */}
+      <div className="bg-slate-50 rounded-lg p-4 text-sm text-slate-700">
+        {stage === 2 && targetUni ? (
+          <>
+            Based on your profile,{" "}
+            <b>{targetUni.name}</b> is a strong{" "}
+            <b>Target</b> option.  
+            Locking it now will let us move into execution and
+            reduce uncertainty.
+          </>
+        ) : (
+          <>I’m monitoring your progress and risk signals.</>
+        )}
+      </div>
 
-      {target && (
+      {/* Action */}
+      {stage === 2 && targetUni && (
         <button
-          onClick={() => setConfirm(target)}
-          className="bg-primary text-white px-4 py-2 rounded-lg font-bold"
+          onClick={() => setConfirm(targetUni)}
+          className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary/90 transition"
         >
-          Lock {target.name}
+          Lock {targetUni.name}
         </button>
       )}
 
-      {/* Confirmation */}
+      {/* CONFIRM MODAL */}
       {confirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-            <h3 className="font-bold mb-2">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-xl p-6 w-full max-w-sm"
+          >
+            <h3 className="text-lg font-bold mb-2">
               Lock {confirm.name}?
             </h3>
             <p className="text-sm text-slate-500 mb-4">
-              Locking focuses your entire strategy on execution.
+              This will move you into execution mode and
+              generate tasks. You can unlock later if needed.
             </p>
 
             <div className="flex gap-3">
               <button
                 onClick={() => {
-                  lockUniversity({
-                    id: confirm.id,
-                    name: confirm.name,
-                  });
-                  increaseConfidence(15);
+                  lockUniversity(
+                    {
+                      id: confirm.id,
+                      name: confirm.name,
+                    },
+                    "AI_RECOMMENDED" // ✅ SECOND ARG (REASON)
+                  );
                   setConfirm(null);
                 }}
                 className="flex-1 bg-primary text-white py-2 rounded-lg font-bold"
               >
                 Yes, Lock
               </button>
+
               <button
                 onClick={() => setConfirm(null)}
                 className="flex-1 border py-2 rounded-lg"
@@ -97,7 +115,7 @@ export default function AICounsellor({
                 Cancel
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
     </motion.div>
