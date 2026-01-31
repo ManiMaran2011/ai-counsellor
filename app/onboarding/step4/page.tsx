@@ -6,19 +6,51 @@ import { useUser } from "@/app/context/UserContext";
 
 export default function Step4FinalDetails() {
   const router = useRouter();
-  const { profile, updateProfile, completeOnboarding } = useUser();
+  const { profile, completeOnboarding } = useUser();
 
-  // 🔌 Pre-fill if user navigates back
+  if (!profile) return null;
+
+  /* ================= LOCAL STATE ================= */
+
   const [englishTest, setEnglishTest] = useState("IELTS");
   const [englishScore, setEnglishScore] = useState("");
   const [examName, setExamName] = useState("");
   const [examScore, setExamScore] = useState("");
-  const [budget, setBudget] = useState(profile?.budget?.annualINR ?? "25-50");
-  const [funding, setFunding] = useState(
-    profile?.budget?.funding ?? "Personal Savings"
+
+  const [budget, setBudget] = useState(
+    profile.budget?.annualINR || "25-50"
   );
+  const [funding, setFunding] = useState(
+    profile.budget?.funding || "Personal Savings"
+  );
+
   const [intent, setIntent] = useState("standard");
   const [passport, setPassport] = useState("have");
+
+  /* ================= FINAL SUBMIT ================= */
+
+  const handleComplete = () => {
+    const finalProfile = {
+      ...profile,
+      budget: {
+        annualINR: budget,
+        funding,
+      },
+      readiness: {
+        ielts: englishScore,
+        gre: examScore,
+        sop: intent,
+      },
+    };
+
+    // 🔒 FSM GATE — ONLY PLACE THIS IS CALLED
+    completeOnboarding(finalProfile);
+
+    // 🚀 EXIT ONBOARDING
+    router.push("/dashboard");
+  };
+
+  /* ================= UI ================= */
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -42,8 +74,7 @@ export default function Step4FinalDetails() {
           Almost there!
         </h1>
         <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-          Let’s refine your profile to match you with the best global
-          opportunities.
+          Final details before we unlock your personalized dashboard.
         </p>
       </header>
 
@@ -55,6 +86,7 @@ export default function Step4FinalDetails() {
             <label className="block text-sm font-semibold mb-2">
               English Proficiency
             </label>
+
             <div className="grid grid-cols-2 gap-3 mb-6">
               <select
                 value={englishTest}
@@ -66,6 +98,7 @@ export default function Step4FinalDetails() {
                 <option>PTE</option>
                 <option>Duolingo</option>
               </select>
+
               <input
                 value={englishScore}
                 onChange={(e) => setEnglishScore(e.target.value)}
@@ -77,12 +110,14 @@ export default function Step4FinalDetails() {
             <label className="block text-sm font-semibold mb-2">
               Competitive Exams (Optional)
             </label>
+
             <input
               value={examName}
               onChange={(e) => setExamName(e.target.value)}
               placeholder="GRE / GMAT / SAT"
               className="mb-3 w-full rounded-lg border-slate-200 bg-slate-50 h-11 px-4"
             />
+
             <input
               value={examScore}
               onChange={(e) => setExamScore(e.target.value)}
@@ -96,6 +131,7 @@ export default function Step4FinalDetails() {
             <label className="block text-sm font-semibold mb-3">
               Annual Budget
             </label>
+
             <div className="grid grid-cols-2 gap-3 mb-6">
               <BudgetOption value="10-25" label="₹10L - 25L" selected={budget} set={setBudget} />
               <BudgetOption value="25-50" label="₹25L - 50L" selected={budget} set={setBudget} />
@@ -106,6 +142,7 @@ export default function Step4FinalDetails() {
             <label className="block text-sm font-semibold mb-2">
               Funding Source
             </label>
+
             <select
               value={funding}
               onChange={(e) => setFunding(e.target.value)}
@@ -119,62 +156,10 @@ export default function Step4FinalDetails() {
           </Section>
         </div>
 
-        {/* Intent */}
-        <h3 className="text-center text-sm font-semibold uppercase tracking-widest text-slate-400 mb-6">
-          When do you want to apply?
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-          <IntentCard id="fast" label="Fast Track" sub="Next 6 Months" selected={intent} set={setIntent} />
-          <IntentCard id="standard" label="Standard" sub="Next Year" selected={intent} set={setIntent} />
-          <IntentCard id="early" label="Early Planning" sub="2+ Years" selected={intent} set={setIntent} />
-        </div>
-
-        {/* Passport */}
-        <div className="max-w-md mx-auto mb-14">
-          <label className="block text-center text-sm font-semibold mb-4">
-            Passport Status
-          </label>
-          <div className="flex bg-slate-100 p-1.5 rounded-xl">
-            {["have", "applied", "notyet"].map((p) => (
-              <button
-                key={p}
-                onClick={() => setPassport(p)}
-                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition ${
-                  passport === p
-                    ? "bg-primary text-white"
-                    : "text-slate-500"
-                }`}
-              >
-                {p === "have" ? "Have Passport" : p === "applied" ? "Applied" : "Not Yet"}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Footer */}
         <footer className="flex flex-col items-center gap-6">
           <button
-            onClick={() => {
-              // 🔥 FINAL COMMIT (THIS IS THE GATE)
-              updateProfile({
-                budget: {
-                  annualINR: budget,
-                  funding,
-                },
-                readiness: {
-                  ielts: englishScore,
-                  gre: examScore,
-                  sop: intent,
-                },
-              });
-
-              completeOnboarding({
-                ...profile!,
-              });
-
-              router.push("/onboarding/success");
-            }}
+            onClick={handleComplete}
             className="w-full max-w-sm bg-primary text-white py-4 px-8 rounded-xl font-bold text-lg shadow-xl hover:bg-primary/90"
           >
             Complete My Profile
@@ -192,13 +177,15 @@ export default function Step4FinalDetails() {
   );
 }
 
-/* ---------- Helper Components ---------- */
+/* ================= HELPERS ================= */
 
 function Section({ title, icon, children }: any) {
   return (
     <section className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
       <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
-        <span className="material-symbols-outlined text-primary">{icon}</span>
+        <span className="material-symbols-outlined text-primary">
+          {icon}
+        </span>
         {title}
       </h3>
       {children}
@@ -217,22 +204,6 @@ function BudgetOption({ value, label, selected, set }: any) {
       }`}
     >
       <span className="font-bold">{label}</span>
-    </button>
-  );
-}
-
-function IntentCard({ id, label, sub, selected, set }: any) {
-  return (
-    <button
-      onClick={() => set(id)}
-      className={`p-8 rounded-2xl text-center border transition ${
-        selected === id
-          ? "border-primary bg-soft-blue text-primary"
-          : "border-transparent bg-white shadow-sm"
-      }`}
-    >
-      <p className="text-lg font-bold">{label}</p>
-      <p className="text-sm text-slate-500">{sub}</p>
     </button>
   );
 }
