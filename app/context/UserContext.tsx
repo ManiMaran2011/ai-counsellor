@@ -26,9 +26,12 @@ export type Task = {
   risk: RiskLevel;
 
   category: TaskCategory;
-  priority: number; // lower = more important
+  priority: number; // lower = higher priority
 
   dependsOn?: string[];
+
+  /** ✅ OPTIONAL — used by dailyFocusEngine */
+  deadline?: string; // ISO date string
 };
 
 /* ================= PROFILE ================= */
@@ -127,7 +130,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setConfidence(60);
     setRisk("MEDIUM");
 
-    // 🔥 INITIAL EXECUTION TASKS
+    // 🔥 INITIAL EXECUTION TASKS (WITH DEADLINES)
     setTasks([
       {
         id: "sop-final",
@@ -136,6 +139,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         risk: "HIGH",
         category: "SOP",
         priority: 1,
+        deadline: futureDate(14),
       },
       {
         id: "ielts-submit",
@@ -144,6 +148,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         risk: "MEDIUM",
         category: "TEST",
         priority: 2,
+        deadline: futureDate(21),
       },
       {
         id: "bank-proof",
@@ -152,6 +157,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         risk: "HIGH",
         category: "FINANCE",
         priority: 1,
+        deadline: futureDate(10),
       },
     ]);
   };
@@ -190,6 +196,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       {children}
     </UserContext.Provider>
   );
+}
+
+/* ================= UTIL ================= */
+
+function futureDate(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString();
 }
 
 export const useUser = () => useContext(UserContext);
