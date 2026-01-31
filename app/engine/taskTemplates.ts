@@ -1,3 +1,5 @@
+// app/engine/taskTemplates.ts
+
 import type { Profile, University } from "@/app/context/UserContext";
 
 /* ================= TYPES ================= */
@@ -18,16 +20,22 @@ export type TaskTemplate = {
   requiredIf: (profile: Profile, university: University) => boolean;
 
   // Execution metadata
-  priority: number;       // lower = higher priority
-  blocking?: boolean;     // blocks submission if incomplete
-  dueInDays?: number;     // used by risk engine
-  dependsOn?: string[];   // task IDs
+  priority: number; // lower = higher priority
+  blocking?: boolean;
+  dueInDays?: number;
+  dependsOn?: string[];
 };
+
+/* ================= HELPERS ================= */
+
+const isSTEM = (degree: string) =>
+  degree.toLowerCase().includes("engineering") ||
+  degree.toLowerCase().includes("computer") ||
+  degree.toLowerCase().includes("science");
 
 /* ================= TEMPLATES ================= */
 
 export const TASK_TEMPLATES: TaskTemplate[] = [
-  /* ================= SOP ================= */
   {
     id: "sop-final",
     category: "SOP",
@@ -35,12 +43,10 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     priority: 1,
     blocking: true,
     dueInDays: 14,
-    requiredIf: (profile) => {
-      return profile.readiness.sop !== "READY";
-    },
+    requiredIf: (profile) =>
+      profile.readiness.sop !== "READY",
   },
 
-  /* ================= IELTS ================= */
   {
     id: "ielts-submit",
     category: "TEST",
@@ -48,37 +54,24 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     priority: 2,
     blocking: true,
     dueInDays: 21,
-    requiredIf: (profile, uni) => {
-      if (!uni.program) return false;
-
-      const requiresIELTS =
-        uni.program.toLowerCase().includes("engineering") ||
-        uni.program.toLowerCase().includes("science");
-
-      return requiresIELTS && profile.readiness.ielts !== "COMPLETED";
-    },
+    requiredIf: (profile) =>
+      isSTEM(profile.goals.targetDegree) &&
+      profile.readiness.ielts !== "COMPLETED",
   },
 
-  /* ================= GRE ================= */
   {
     id: "gre-report",
     category: "TEST",
     title: "Send GRE Official Report",
     priority: 3,
-    blocking: false,
     dueInDays: 30,
-    requiredIf: (profile, uni) => {
-      if (!uni.program) return false;
-
-      const requiresGRE =
-        uni.program.toLowerCase().includes("computer") ||
-        uni.program.toLowerCase().includes("engineering");
-
-      return requiresGRE && profile.readiness.gre !== "COMPLETED";
-    },
+    requiredIf: (profile) =>
+      profile.goals.targetDegree
+        .toLowerCase()
+        .includes("computer") &&
+      profile.readiness.gre !== "COMPLETED",
   },
 
-  /* ================= FINANCE ================= */
   {
     id: "bank-proof",
     category: "FINANCE",
@@ -86,10 +79,9 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     priority: 2,
     blocking: true,
     dueInDays: 10,
-    requiredIf: () => true, // always required
+    requiredIf: () => true,
   },
 
-  /* ================= APPLICATION ================= */
   {
     id: "application-fee",
     category: "PORTAL",
