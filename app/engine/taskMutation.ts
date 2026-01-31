@@ -3,8 +3,8 @@
 import { Task } from "@/app/context/UserContext";
 
 /**
- * Mutate tasks AFTER a task is completed.
- * This keeps the task model minimal and stable.
+ * Mutate tasks when certain tasks are completed
+ * This is deterministic rule-based mutation
  */
 export function mutateTasksOnCompletion(
   completedTaskId: string,
@@ -15,25 +15,33 @@ export function mutateTasksOnCompletion(
   const hasTask = (id: string) =>
     tasks.some((t) => t.id === id);
 
-  /* ================= SOP → VISA SOP ================= */
-
-  if (completedTaskId === "sop" && !hasTask("visa-sop")) {
+  /* ===============================
+     SOP COMPLETED → VISA SOP TASK
+  =============================== */
+  if (completedTaskId === "sop-final" && !hasTask("visa-sop")) {
     tasks.push({
       id: "visa-sop",
       title: "Draft Visa SOP / Explanation Letter",
       status: "NOT_STARTED",
       risk: "HIGH",
+      category: "VISA",
+      priority: 2,
+      dependsOn: ["sop-final"],
     });
   }
 
-  /* ================= IELTS → APPLICATION FEE ================= */
-
-  if (completedTaskId === "ielts" && !hasTask("fee")) {
+  /* ===============================
+     IELTS COMPLETED → APPLICATION TASK
+  =============================== */
+  if (completedTaskId === "ielts-submit" && !hasTask("application-fee")) {
     tasks.push({
-      id: "fee",
+      id: "application-fee",
       title: "Pay Application Fee",
       status: "NOT_STARTED",
       risk: "HIGH",
+      category: "PORTAL",
+      priority: 3,
+      dependsOn: ["ielts-submit"],
     });
   }
 
