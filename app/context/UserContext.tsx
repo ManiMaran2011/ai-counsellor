@@ -2,9 +2,29 @@
 
 import { createContext, useContext, useState } from "react";
 
-/* ================= TYPES ================= */
+/* ===================== CORE TYPES ===================== */
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
+
+export type TaskStatus =
+  | "NOT_STARTED"
+  | "IN_PROGRESS"
+  | "DONE";
+
+export type Task = {
+  id: string;
+  title: string;
+  category?: string;
+
+  status: TaskStatus;
+
+  priority?: number;
+  deadline?: string;
+
+  risk?: RiskLevel;
+
+  dependsOn?: string[];
+};
 
 export type Profile = {
   name: string;
@@ -41,9 +61,9 @@ export type University = {
   program?: string;
 };
 
-type Stage = 1 | 2 | 3 | 4;
+export type Stage = 1 | 2 | 3 | 4;
 
-/* ================= CONTEXT TYPE ================= */
+/* ===================== CONTEXT TYPE ===================== */
 
 type UserContextType = {
   profile: Profile | null;
@@ -51,22 +71,27 @@ type UserContextType = {
 
   lockedUniversity: University | null;
 
+  tasks: Task[];
+
   confidence: number;
   risk: RiskLevel;
 
   completeOnboarding: (profile: Profile) => void;
+
   lockUniversity: (uni: University) => boolean;
   unlockUniversity: () => void;
+
+  setTasks: (tasks: Task[]) => void;
 
   increaseConfidence: (by?: number) => void;
   decayConfidence: (by?: number) => void;
 };
 
-/* ================= CONTEXT ================= */
+/* ===================== CONTEXT ===================== */
 
 const UserContext = createContext<UserContextType>(null as any);
 
-/* ================= PROVIDER ================= */
+/* ===================== PROVIDER ===================== */
 
 export function UserProvider({
   children,
@@ -79,10 +104,12 @@ export function UserProvider({
   const [lockedUniversity, setLockedUniversity] =
     useState<University | null>(null);
 
+  const [tasks, setTasks] = useState<Task[]>([]);
+
   const [confidence, setConfidence] = useState(70);
   const [risk, setRisk] = useState<RiskLevel>("MEDIUM");
 
-  /* ================= ACTIONS ================= */
+  /* ===================== ACTIONS ===================== */
 
   const completeOnboarding = (data: Profile) => {
     setProfile(data);
@@ -96,7 +123,9 @@ export function UserProvider({
 
     setLockedUniversity(uni);
     setStage(4);
+
     setRisk("MEDIUM");
+    setConfidence(60);
 
     return true;
   };
@@ -104,6 +133,8 @@ export function UserProvider({
   const unlockUniversity = () => {
     setLockedUniversity(null);
     setStage(2);
+    setTasks([]);
+
     setConfidence((c) => Math.max(40, c - 10));
     setRisk("MEDIUM");
   };
@@ -116,7 +147,7 @@ export function UserProvider({
     setConfidence((c) => Math.max(0, c - by));
   };
 
-  /* ================= PROVIDER ================= */
+  /* ===================== PROVIDER ===================== */
 
   return (
     <UserContext.Provider
@@ -124,12 +155,16 @@ export function UserProvider({
         profile,
         stage,
         lockedUniversity,
+        tasks,
+
         confidence,
         risk,
 
         completeOnboarding,
         lockUniversity,
         unlockUniversity,
+
+        setTasks,
 
         increaseConfidence,
         decayConfidence,
@@ -140,6 +175,6 @@ export function UserProvider({
   );
 }
 
-/* ================= HOOK ================= */
+/* ===================== HOOK ===================== */
 
 export const useUser = () => useContext(UserContext);
