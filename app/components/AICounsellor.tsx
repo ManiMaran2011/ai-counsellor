@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useUser } from "@/app/context/UserContext";
+import { generateTasks } from "@/app/engine/taskEngine";
 
 type UniversityLite = {
   id: string;
@@ -18,12 +19,12 @@ export default function AICounsellor({
   const {
     stage,
     confidence,
+    profile,
     lockUniversity,
   } = useUser();
 
   const [confirm, setConfirm] = useState<UniversityLite | null>(null);
 
-  // Pick best TARGET university
   const targetUni = universities.find(
     (u) => u.category === "TARGET"
   );
@@ -56,17 +57,17 @@ export default function AICounsellor({
           <>
             Based on your profile,{" "}
             <b>{targetUni.name}</b> is a strong{" "}
-            <b>Target</b> option.  
-            Locking it now will let us move into execution and
-            reduce uncertainty.
+            <b>Target</b> university.  
+            Locking it now allows us to generate a focused
+            execution roadmap.
           </>
         ) : (
-          <>I’m monitoring your progress and risk signals.</>
+          <>I’m monitoring your progress and risks.</>
         )}
       </div>
 
       {/* Action */}
-      {stage === 2 && targetUni && (
+      {stage === 2 && targetUni && profile && (
         <button
           onClick={() => setConfirm(targetUni)}
           className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary/90 transition"
@@ -76,7 +77,7 @@ export default function AICounsellor({
       )}
 
       {/* CONFIRM MODAL */}
-      {confirm && (
+      {confirm && profile && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -87,20 +88,29 @@ export default function AICounsellor({
               Lock {confirm.name}?
             </h3>
             <p className="text-sm text-slate-500 mb-4">
-              This will move you into execution mode and
-              generate tasks. You can unlock later if needed.
+              This will commit your strategy and generate
+              application tasks.
             </p>
 
             <div className="flex gap-3">
               <button
                 onClick={() => {
+                  const tasks = generateTasks({
+                    profile,
+                    university: {
+                      id: confirm.id,
+                      name: confirm.name,
+                    },
+                  });
+
                   lockUniversity(
                     {
                       id: confirm.id,
                       name: confirm.name,
                     },
-                    "AI_RECOMMENDED" // ✅ SECOND ARG (REASON)
+                    tasks // ✅ CORRECT SECOND ARG
                   );
+
                   setConfirm(null);
                 }}
                 className="flex-1 bg-primary text-white py-2 rounded-lg font-bold"
