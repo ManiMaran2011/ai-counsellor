@@ -2,12 +2,14 @@
 
 import { Task } from "@/app/context/UserContext";
 
-type Trigger = {
+type TaskTrigger = {
   whenCompleted: string;
   creates: Task;
 };
 
-const TASK_TRIGGERS: Trigger[] = [
+/* ================= TRIGGERS ================= */
+
+const TASK_TRIGGERS: TaskTrigger[] = [
   {
     whenCompleted: "sop-final",
     creates: {
@@ -15,6 +17,9 @@ const TASK_TRIGGERS: Trigger[] = [
       title: "Upload SOP PDF to University Portal",
       status: "NOT_STARTED",
       risk: "HIGH",
+      category: "PORTAL",
+      priority: 1,
+      dependsOn: ["sop-final"],
     },
   },
 
@@ -25,6 +30,9 @@ const TASK_TRIGGERS: Trigger[] = [
       title: "Pay Application Fee",
       status: "NOT_STARTED",
       risk: "HIGH",
+      category: "PORTAL",
+      priority: 1,
+      dependsOn: ["bank-proof"],
     },
   },
 ];
