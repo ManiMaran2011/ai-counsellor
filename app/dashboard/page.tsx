@@ -1,29 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { useUser } from "@/app/context/UserContext";
-
-/* ================= MOTION PRESETS ================= */
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const stagger = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.08,
-    },
-  },
-};
-
-/* ================= PAGE ================= */
 
 export default function DashboardPage() {
   const router = useRouter();
+
   const {
     profile,
     stage,
@@ -32,166 +14,171 @@ export default function DashboardPage() {
     lockedUniversity,
   } = useUser();
 
-  if (!profile) return null;
+  // Safety: onboarding not complete
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8fafc]">
+        <h2 className="text-2xl font-bold mb-2">
+          Profile not ready
+        </h2>
+        <p className="text-slate-500 mb-6">
+          Please complete onboarding to continue.
+        </p>
+        <button
+          onClick={() => router.push("/onboarding/step1")}
+          className="px-6 py-3 rounded-xl bg-primary text-white font-bold"
+        >
+          Start Onboarding
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] px-6 py-10">
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={stagger}
-        className="max-w-6xl mx-auto space-y-10"
-      >
-        {/* ================= ORIENTATION ================= */}
-        <motion.div variants={fadeUp}>
-          <div className="rounded-xl border bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-widest text-slate-400">
-              Your Application Journey
-            </p>
-            <p className="font-semibold text-slate-800">
-              Stage {stage} · Profile completed
-            </p>
-          </div>
-        </motion.div>
-
+    <div className="min-h-screen bg-[#f8fafc] px-6 py-12">
+      <div className="max-w-6xl mx-auto space-y-12">
         {/* ================= HEADER ================= */}
-        <motion.div variants={fadeUp}>
-          <h1 className="text-4xl font-bold text-charcoal">
-            Welcome back, {profile.name}
+        <header className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold">
+            Your Study Abroad Dashboard
           </h1>
-          <p className="text-slate-500 mt-2 max-w-2xl">
-            Here’s where things stand — and what to focus on next.
+          <p className="text-slate-600">
+            This is your control center. Everything starts here.
           </p>
-        </motion.div>
+        </header>
 
-        {/* ================= STATUS GRID ================= */}
-        <motion.div
-          variants={stagger}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6"
-        >
-          {/* Profile Summary */}
-          <motion.div
-            variants={fadeUp}
-            className="bg-white rounded-2xl p-6 border shadow-sm"
-          >
-            <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">
-              Profile Summary
-            </p>
-            <p className="font-semibold">{profile.goals.targetDegree}</p>
-            <p className="text-sm text-slate-500">
-              {profile.goals.countries.join(", ")}
-            </p>
-            <p className="text-sm text-slate-500 mt-2">
-              Budget: ₹{profile.budget.annualINR}L
-            </p>
-          </motion.div>
+        {/* ================= WHERE AM I ================= */}
+        <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <h2 className="text-xl font-bold mb-4">
+            Where am I?
+          </h2>
 
-          {/* Confidence Meter */}
-          <motion.div
-            variants={fadeUp}
-            className="bg-white rounded-2xl p-6 border shadow-sm"
-          >
-            <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">
-              Application Strength
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <InfoCard
+              label="Current Stage"
+              value={`Stage ${stage}`}
+            />
+            <InfoCard
+              label="Target Degree"
+              value={profile.goals.targetDegree || "Not set"}
+            />
+            <InfoCard
+              label="Preferred Countries"
+              value={
+                profile.goals.countries.length > 0
+                  ? profile.goals.countries.join(", ")
+                  : "Not set"
+              }
+            />
+          </div>
+        </section>
 
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-slate-500">Confidence</span>
-              <span className="font-bold">{confidence}%</span>
-            </div>
-
-            <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${confidence}%` }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                className="h-full bg-primary"
-              />
-            </div>
-
-            <p className="text-xs text-slate-500 mt-2">
-              Improves as tasks are completed
-            </p>
-          </motion.div>
-
-          {/* Risk */}
-          <motion.div
-            variants={fadeUp}
-            className="bg-white rounded-2xl p-6 border shadow-sm"
-          >
-            <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">
-              Risk Level
-            </p>
-
-            <span
-              className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${
-                risk === "HIGH"
-                  ? "bg-red-100 text-red-700"
-                  : risk === "MEDIUM"
-                  ? "bg-yellow-100 text-yellow-700"
-                  : "bg-green-100 text-green-700"
-              }`}
-            >
-              {risk}
-            </span>
-
-            <p className="text-sm text-slate-500 mt-3">
-              Based on deadlines & readiness
-            </p>
-          </motion.div>
-        </motion.div>
-
-        {/* ================= AI COUNSELLOR ================= */}
-        <motion.div
-          variants={fadeUp}
-          className="bg-white border rounded-2xl p-8 shadow-sm"
-        >
-          <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">
-            AI Counsellor Recommendation
-          </p>
+        {/* ================= WHAT SHOULD I DO ================= */}
+        <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <h2 className="text-xl font-bold mb-4">
+            What should I do next?
+          </h2>
 
           {!lockedUniversity ? (
-            <>
-              <p className="text-lg font-semibold mb-4">
-                You’re ready to shortlist universities.
-              </p>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div>
+                <p className="font-semibold mb-1">
+                  Discover universities that fit you
+                </p>
+                <p className="text-slate-500">
+                  Based on your profile, budget, and readiness.
+                </p>
+              </div>
 
-              <p className="text-slate-600 mb-6 max-w-2xl">
-                Based on your profile and confidence level, you have a strong
-                chance at at least one Target university.
-              </p>
-
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+              <button
                 onClick={() => router.push("/dashboard/insight")}
-                className="bg-primary text-white px-6 py-3 rounded-xl font-bold"
+                className="px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary/90"
               >
-                Discover University Matches →
-              </motion.button>
-            </>
+                Discover Universities →
+              </button>
+            </div>
           ) : (
-            <>
-              <p className="text-lg font-semibold mb-2">
-                Execution mode active
-              </p>
-              <p className="text-slate-600 mb-4">
-                You’ve locked <strong>{lockedUniversity.name}</strong>.
-                Focus on completing tasks to reduce risk.
-              </p>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div>
+                <p className="font-semibold mb-1">
+                  Execution in progress
+                </p>
+                <p className="text-slate-500">
+                  You are applying to{" "}
+                  <span className="font-semibold">
+                    {lockedUniversity.name}
+                  </span>
+                </p>
+              </div>
 
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+              <button
                 onClick={() => router.push("/execution")}
-                className="bg-primary text-white px-6 py-3 rounded-xl font-bold"
+                className="px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary/90"
               >
-                Continue Execution →
-              </motion.button>
-            </>
+                Go to Execution →
+              </button>
+            </div>
           )}
-        </motion.div>
-      </motion.div>
+        </section>
+
+        {/* ================= HOW STRONG AM I ================= */}
+        <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <h2 className="text-xl font-bold mb-4">
+            How strong is my profile?
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Confidence */}
+            <div>
+              <p className="text-sm text-slate-500 mb-1">
+                Confidence
+              </p>
+              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${confidence}%` }}
+                />
+              </div>
+              <p className="mt-2 font-bold">
+                {confidence}%
+              </p>
+            </div>
+
+            {/* Risk */}
+            <InfoCard
+              label="Risk Level"
+              value={risk}
+            />
+
+            {/* Budget */}
+            <InfoCard
+              label="Annual Budget"
+              value={`₹${profile.budget.annualINR} LPA`}
+            />
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/* ================= HELPERS ================= */
+
+function InfoCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+      <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">
+        {label}
+      </p>
+      <p className="text-lg font-bold">
+        {value}
+      </p>
     </div>
   );
 }

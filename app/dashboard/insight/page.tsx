@@ -1,110 +1,196 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/context/UserContext";
-import { LockConfirmation } from "@/app/components/LockConfirmation";
 
-type Uni = {
+/* ================= TYPES ================= */
+
+type UniCategory = "DREAM" | "TARGET" | "SAFE";
+
+type UniversityCard = {
   id: string;
   name: string;
-  category: "DREAM" | "TARGET" | "SAFE";
-  reason: string;
+  country: string;
+  avgCost: number; // LPA
+  minConfidence: number;
+  category: UniCategory;
 };
 
-const UNIVERSITIES: Uni[] = [
+/* ================= DUMMY DATA ================= */
+
+const UNIVERSITIES: UniversityCard[] = [
   {
-    id: "u1",
-    name: "Stanford University",
+    id: "mit",
+    name: "MIT",
+    country: "USA",
+    avgCost: 70,
+    minConfidence: 85,
     category: "DREAM",
-    reason: "Top-tier, extremely competitive for your current profile",
   },
   {
-    id: "u2",
-    name: "University of Toronto",
+    id: "stanford",
+    name: "Stanford University",
+    country: "USA",
+    avgCost: 65,
+    minConfidence: 80,
+    category: "DREAM",
+  },
+  {
+    id: "ubc",
+    name: "University of British Columbia",
+    country: "Canada",
+    avgCost: 35,
+    minConfidence: 65,
     category: "TARGET",
-    reason: "Strong fit based on budget, profile & readiness",
   },
   {
-    id: "u3",
-    name: "Arizona State University",
+    id: "manchester",
+    name: "University of Manchester",
+    country: "UK",
+    avgCost: 30,
+    minConfidence: 60,
+    category: "TARGET",
+  },
+  {
+    id: "tu-berlin",
+    name: "TU Berlin",
+    country: "Germany",
+    avgCost: 15,
+    minConfidence: 50,
     category: "SAFE",
-    reason: "High acceptance probability with current credentials",
+  },
+  {
+    id: "ucd",
+    name: "University College Dublin",
+    country: "Ireland",
+    avgCost: 25,
+    minConfidence: 55,
+    category: "SAFE",
   },
 ];
 
+/* ================= PAGE ================= */
+
 export default function InsightPage() {
   const router = useRouter();
-  const { lockUniversity } = useUser();
-  const [confirm, setConfirm] = useState<Uni | null>(null);
+  const { profile, confidence, lockUniversity } = useUser();
+
+  if (!profile) {
+    router.push("/dashboard");
+    return null;
+  }
+
+  const budgetLimit = Number(profile.budget.annualINR);
+
+  const visibleUniversities = UNIVERSITIES.filter(
+    (u) => u.avgCost <= budgetLimit + 10 // soft buffer
+  );
+
+  const grouped = {
+    DREAM: visibleUniversities.filter((u) => u.category === "DREAM"),
+    TARGET: visibleUniversities.filter((u) => u.category === "TARGET"),
+    SAFE: visibleUniversities.filter((u) => u.category === "SAFE"),
+  };
 
   return (
-    <div className="min-h-screen bg-[#0b1220] text-white px-6 py-12">
-      <div className="max-w-6xl mx-auto space-y-10">
-        {/* HEADER */}
-        <div>
-          <p className="text-xs uppercase tracking-widest text-slate-400">
+    <div className="min-h-screen bg-[#f8fafc] px-6 py-12">
+      <div className="max-w-6xl mx-auto space-y-12">
+        {/* ================= HEADER ================= */}
+        <header>
+          <h1 className="text-3xl font-bold mb-2">
             University Discovery
-          </p>
-          <h1 className="text-4xl font-bold">
-            Choose where you commit
           </h1>
-          <p className="text-slate-400 mt-2 max-w-xl">
-            Locking a university activates deadlines, task pressure,
-            and execution mode. Choose wisely.
+          <p className="text-slate-600 max-w-2xl">
+            These universities are categorized based on your
+            budget, confidence, and readiness.
           </p>
-        </div>
+        </header>
 
-        {/* CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {UNIVERSITIES.map((uni) => (
-            <motion.div
-              key={uni.id}
-              whileHover={{ scale: 1.03 }}
-              className={`rounded-2xl p-6 border cursor-pointer
-                ${
-                  uni.category === "DREAM"
-                    ? "border-red-400/40 bg-red-500/10"
-                    : uni.category === "TARGET"
-                    ? "border-yellow-400/40 bg-yellow-500/10"
-                    : "border-green-400/40 bg-green-500/10"
-                }`}
-              onClick={() => setConfirm(uni)}
-            >
-              <p className="text-xs uppercase tracking-widest opacity-70">
-                {uni.category}
-              </p>
-              <h3 className="text-xl font-bold mt-2">{uni.name}</h3>
-              <p className="text-sm text-slate-300 mt-3">
-                {uni.reason}
-              </p>
+        {/* ================= GROUPS ================= */}
+        {(["DREAM", "TARGET", "SAFE"] as UniCategory[]).map(
+          (category) => (
+            <section key={category} className="space-y-4">
+              <h2 className="text-xl font-bold">
+                {category === "DREAM" && "🌟 Dream Universities"}
+                {category === "TARGET" && "🎯 Target Universities"}
+                {category === "SAFE" && "🛡 Safe Universities"}
+              </h2>
 
-              <div className="mt-6 font-bold text-sm text-primary">
-                Lock this university →
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {grouped[category].map((uni) => {
+                  const confidenceOk =
+                    confidence >= uni.minConfidence;
+
+                  return (
+                    <div
+                      key={uni.id}
+                      className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between"
+                    >
+                      <div>
+                        <h3 className="text-lg font-bold mb-1">
+                          {uni.name}
+                        </h3>
+                        <p className="text-sm text-slate-500 mb-3">
+                          {uni.country}
+                        </p>
+
+                        <ul className="text-sm text-slate-600 space-y-1">
+                          <li>
+                            💰 Avg Cost: ₹{uni.avgCost} LPA
+                          </li>
+                          <li>
+                            📈 Required Confidence:{" "}
+                            {uni.minConfidence}%
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="mt-6">
+                        {confidenceOk ? (
+                          <button
+                            onClick={() => {
+                              lockUniversity({
+                                id: uni.id,
+                                name: uni.name,
+                                category: uni.category,
+                              });
+                              router.push("/execution");
+                            }}
+                            className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary/90"
+                          >
+                            Lock & Start Application →
+                          </button>
+                        ) : (
+                          <div className="text-xs text-red-500 font-semibold">
+                            Confidence too low for now
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {grouped[category].length === 0 && (
+                  <p className="text-slate-400 text-sm">
+                    No universities available in this category
+                    based on your profile.
+                  </p>
+                )}
               </div>
-            </motion.div>
-          ))}
+            </section>
+          )
+        )}
+
+        {/* ================= FOOTER ================= */}
+        <div className="pt-8">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="text-sm text-slate-500 hover:text-slate-700"
+          >
+            ← Back to Dashboard
+          </button>
         </div>
       </div>
-
-      {/* CONFIRMATION */}
-      <AnimatePresence>
-        {confirm && (
-          <LockConfirmation
-            university={confirm}
-            onCancel={() => setConfirm(null)}
-            onConfirm={() => {
-              lockUniversity({
-                id: confirm.id,
-                name: confirm.name,
-                category: confirm.category,
-              });
-              router.push("/execution");
-            }}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

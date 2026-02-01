@@ -43,7 +43,7 @@ export default function Step4FinalDetails() {
       },
     });
 
-    router.push("/dashboard");
+    router.push("/onboarding/success");
   };
 
   /* ================= UI ================= */
