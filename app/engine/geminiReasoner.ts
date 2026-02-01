@@ -1,66 +1,55 @@
-import { askGemini } from "./geminiClient";
-import type { Profile, University, Task } from "@/app/context/UserContext";
+// app/engine/geminiReasoner.ts
 
-/* ================= UNIVERSITY ================= */
+import type { Profile, University } from "@/app/context/UserContext";
 
-export async function explainUniversityFit(
+/**
+ * This engine PREPARES prompts for Gemini.
+ * It must be defensive: profile fields may be partially filled.
+ */
+export function buildGeminiPrompt(
   profile: Profile,
-  university: University,
-  category: "DREAM" | "TARGET" | "SAFE"
-) {
-  const prompt = `
-You are an overseas education counsellor.
-
-STUDENT:
-- Target Degree: ${profile.goals.targetDegree}
-- Countries: ${profile.goals.countries.join(", ")}
-- Budget: ${profile.budget.annualINR} L INR
-- IELTS: ${profile.readiness.ielts || "Not completed"}
-- SOP: ${profile.readiness.sop || "Not ready"}
-
-UNIVERSITY:
-- Name: ${university.name}
-- Category: ${category}
-
-Explain in 3 bullet points why this university is a ${category} choice.
-Be realistic and honest.
-`;
-
-  return askGemini(prompt);
-}
-
-/* ================= TASK ================= */
-
-export async function explainTaskImportance(
-  task: Task,
   university: University
-) {
-  const prompt = `
-Student has locked ${university.name}.
+): string {
+  /* ================= SAFE NORMALIZATION ================= */
 
-Task: ${task.title}
-Risk Level: ${task.risk}
+  const targetDegree =
+    profile.goals?.targetDegree || "Not specified";
 
-Explain in 2–3 short lines why this task matters right now.
-`;
+  const countries =
+    profile.goals?.countries?.length
+      ? profile.goals.countries.join(", ")
+      : "Not specified";
 
-  return askGemini(prompt);
-}
+  const budget =
+    profile.budget?.annualINR
+      ? `${profile.budget.annualINR} L INR`
+      : "Not specified";
 
-/* ================= ESCALATION ================= */
+  const ielts =
+    profile.readiness?.ielts || "Not completed";
 
-export async function explainEscalation(
-  confidence: number,
-  pendingTasks: string[]
-) {
-  const prompt = `
-A student applying abroad has:
-- Confidence score: ${confidence}
-- Pending high-risk tasks: ${pendingTasks.join(", ")}
+  const sop =
+    profile.readiness?.sop || "Not ready";
 
-Explain briefly why expert guidance is recommended at this stage.
-Tone: calm, supportive, not salesy.
-`;
+  /* ================= PROMPT ================= */
 
-  return askGemini(prompt);
+  return `
+You are an experienced overseas education counsellor.
+
+STUDENT PROFILE:
+- Target Degree: ${targetDegree}
+- Preferred Countries: ${countries}
+- Budget: ${budget}
+- IELTS Status: ${ielts}
+- SOP Status: ${sop}
+
+UNIVERSITY UNDER REVIEW:
+- Name: ${university.name}
+- Category: ${university.category}
+
+TASK:
+Explain the admission risk for this student applying to this university.
+Be concise, realistic, and professional.
+Do NOT give guarantees.
+  `.trim();
 }
