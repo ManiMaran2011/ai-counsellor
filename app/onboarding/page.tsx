@@ -7,7 +7,7 @@ export default function OnboardingIndex() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/onboarding/step1");
+    router.replace("/dashboard");
   }, [router]);
 
   return null;
