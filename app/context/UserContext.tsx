@@ -24,15 +24,16 @@ export type Profile = {
     countries: string[];
   };
 
+  // ✅ OPTIONAL DURING ONBOARDING
   budget?: {
-    annualINR: string;
-    funding: string;
+    annualINR?: string;
+    funding?: string;
   };
 
   readiness?: {
-    ielts: string;
-    gre: string;
-    sop: string;
+    ielts?: string;
+    gre?: string;
+    sop?: string;
   };
 };
 
@@ -87,10 +88,22 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   /* ================= ACTIONS ================= */
 
-  // ✅ Partial updates (used by onboarding steps)
+  // ✅ SAFE PARTIAL MERGE
   const updateProfile = (data: Partial<Profile>) => {
     setProfile((prev) => {
-      if (!prev) return data as Profile;
+      if (!prev) {
+        return {
+          name: data.name ?? "",
+          email: data.email ?? "",
+          goals: data.goals ?? {
+            targetDegree: "",
+            countries: [],
+          },
+          budget: data.budget,
+          readiness: data.readiness,
+        };
+      }
+
       return {
         ...prev,
         ...data,
@@ -110,14 +123,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  // 🔒 FSM GATE — ONLY place onboarding completes
+  // 🔒 FINALIZE PROFILE
   const completeOnboarding = (data: Profile) => {
     setProfile(data);
     setStage(2);
     setConfidence(75);
     setRisk("MEDIUM");
 
-    // 🔥 CRITICAL: middleware sync
     document.cookie = "stage=2; path=/; max-age=31536000";
   };
 
