@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 /* ================= TYPES ================= */
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
+
 export type TaskStatus = "NOT_STARTED" | "DONE";
 
 export type Task = {
@@ -23,12 +24,12 @@ export type Profile = {
     countries: string[];
   };
 
-  budget: {
+  budget?: {
     annualINR: string;
     funding: string;
   };
 
-  readiness: {
+  readiness?: {
     ielts: string;
     gre: string;
     sop: string;
@@ -53,27 +54,10 @@ type UserContextType = {
 
   updateProfile: (data: Partial<Profile>) => void;
   completeOnboarding: (profile: Profile) => void;
-
   lockUniversity: (uni: University) => void;
   unlockUniversity: () => void;
-
   completeTask: (taskId: string) => void;
 };
-
-/* ================= ENGINES ================= */
-
-import {
-  classifyUniversity,
-  universityRisk,
-} from "@/app/engine/universityEngine";
-
-import {
-  decayConfidence,
-  rewardConfidence,
-} from "@/app/engine/confidenceEngine";
-
-import { generateTasks } from "@/app/engine/taskEngine";
-import { shouldEscalate } from "@/app/engine/escalationEngine";
 
 /* ================= CONTEXT ================= */
 
@@ -82,64 +66,96 @@ const UserContext = createContext<UserContextType>(null as any);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stage, setStage] = useState<Stage>(1);
-
   const [confidence, setConfidence] = useState(70);
   const [risk, setRisk] = useState<RiskLevel>("MEDIUM");
-
   const [lockedUniversity, setLockedUniversity] =
     useState<University | null>(null);
-
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  /* ================= CONFIDENCE DECAY ================= */
+  /* ================= COOKIE HYDRATION ================= */
 
   useEffect(() => {
-    if (stage !== 4) return;
+    const cookieStage = document.cookie
+      .split("; ")
+      .find((c) => c.startsWith("stage="))
+      ?.split("=")[1];
 
-    const timer = setInterval(() => {
-      setConfidence((c) => decayConfidence(c));
-    }, 60000);
-
-    return () => clearInterval(timer);
-  }, [stage]);
+    if (cookieStage) {
+      setStage(Number(cookieStage) as Stage);
+    }
+  }, []);
 
   /* ================= ACTIONS ================= */
 
+  // ✅ Partial updates (used by onboarding steps)
   const updateProfile = (data: Partial<Profile>) => {
-    setProfile((prev) => ({ ...prev!, ...data }));
+    setProfile((prev) => {
+      if (!prev) return data as Profile;
+      return {
+        ...prev,
+        ...data,
+        goals: {
+          ...prev.goals,
+          ...(data.goals ?? {}),
+        },
+        budget: {
+          ...prev.budget,
+          ...(data.budget ?? {}),
+        },
+        readiness: {
+          ...prev.readiness,
+          ...(data.readiness ?? {}),
+        },
+      };
+    });
   };
 
-  const completeOnboarding = (finalProfile: Profile) => {
-    setProfile(finalProfile);
+  // 🔒 FSM GATE — ONLY place onboarding completes
+  const completeOnboarding = (data: Profile) => {
+    setProfile(data);
     setStage(2);
     setConfidence(75);
     setRisk("MEDIUM");
+
+    // 🔥 CRITICAL: middleware sync
+    document.cookie = "stage=2; path=/; max-age=31536000";
   };
 
   const lockUniversity = (uni: University) => {
-    if (!profile) return;
-
-    const category = classifyUniversity(profile, uni, confidence);
-
-    const locked = {
-      ...uni,
-      category,
-    };
-
-    setLockedUniversity(locked);
+    setLockedUniversity(uni);
     setStage(4);
+    setConfidence(60);
 
-    const generatedTasks = generateTasks(profile, locked);
+    document.cookie = "stage=4; path=/; max-age=31536000";
 
-    setTasks(generatedTasks);
-    setRisk(universityRisk(category));
-    setConfidence((c) => Math.max(40, c - 10));
+    setTasks([
+      {
+        id: "sop",
+        title: "Finalize Statement of Purpose",
+        status: "NOT_STARTED",
+        risk: "HIGH",
+      },
+      {
+        id: "ielts",
+        title: "Submit IELTS Score",
+        status: "NOT_STARTED",
+        risk: "MEDIUM",
+      },
+      {
+        id: "fee",
+        title: "Pay Application Fee",
+        status: "NOT_STARTED",
+        risk: "HIGH",
+      },
+    ]);
   };
 
   const unlockUniversity = () => {
     setLockedUniversity(null);
     setTasks([]);
     setStage(2);
+
+    document.cookie = "stage=2; path=/; max-age=31536000";
   };
 
   const completeTask = (taskId: string) => {
@@ -148,20 +164,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         t.id === taskId ? { ...t, status: "DONE" } : t
       )
     );
-
-    setConfidence((c) => rewardConfidence(c));
+    setConfidence((c) => Math.min(100, c + 8));
   };
-
-  /* ================= ESCALATION (READ-ONLY) ================= */
-
-  useEffect(() => {
-    if (shouldEscalate(confidence, tasks)) {
-      console.log("⚠️ Escalation condition met");
-      // future: show expert CTA / unlock advisor
-    }
-  }, [confidence, tasks]);
-
-  /* ================= PROVIDER ================= */
 
   return (
     <UserContext.Provider
