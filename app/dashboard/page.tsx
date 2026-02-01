@@ -5,20 +5,13 @@ import { useUser } from "@/app/context/UserContext";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { profile, stage, confidence, risk, lockedUniversity } = useUser();
 
-  const {
-    profile,
-    stage,
-    confidence,
-    risk,
-    lockedUniversity,
-  } = useUser();
-
-  /* ===============================
-     IMPORTANT: NO REDIRECTS HERE
-     Middleware owns navigation
-  =============================== */
-
+  /**
+   * IMPORTANT:
+   * Do NOT redirect here.
+   * Middleware is the single source of truth for routing.
+   */
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
@@ -29,17 +22,36 @@ export default function DashboardPage() {
     );
   }
 
+  /* ================= NORMALIZED SAFE VALUES ================= */
+
+  const degree =
+    profile.goals?.targetDegree && profile.goals.targetDegree.length > 0
+      ? profile.goals.targetDegree
+      : "Not set";
+
+  const countries =
+    profile.goals?.countries && profile.goals.countries.length > 0
+      ? profile.goals.countries.join(", ")
+      : "Not set";
+
+  const budgetLabel =
+    profile.budget?.annualINR
+      ? `₹${profile.budget.annualINR} LPA`
+      : "Not set";
+
+  /* ================= UI ================= */
+
   return (
     <div className="min-h-screen bg-[#f8fafc] px-6 py-12">
       <div className="max-w-6xl mx-auto space-y-12">
 
         {/* ================= HEADER ================= */}
-        <header className="space-y-2">
+        <header className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold">
             Your Study Abroad Dashboard
           </h1>
           <p className="text-slate-600">
-            This is your control center.
+            This is your control center. Everything starts here.
           </p>
         </header>
 
@@ -50,23 +62,22 @@ export default function DashboardPage() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <InfoCard label="Current Stage" value={`Stage ${stage}`} />
+            <InfoCard
+              label="Current Stage"
+              value={`Stage ${stage}`}
+            />
             <InfoCard
               label="Target Degree"
-              value={profile.goals.targetDegree || "Not set"}
+              value={degree}
             />
             <InfoCard
               label="Preferred Countries"
-              value={
-                profile.goals.countries.length > 0
-                  ? profile.goals.countries.join(", ")
-                  : "Not set"
-              }
+              value={countries}
             />
           </div>
         </section>
 
-        {/* ================= WHAT NEXT ================= */}
+        {/* ================= WHAT SHOULD I DO ================= */}
         <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
           <h2 className="text-xl font-bold mb-4">
             What should I do next?
@@ -79,7 +90,7 @@ export default function DashboardPage() {
                   Discover universities that fit you
                 </p>
                 <p className="text-slate-500">
-                  Based on your profile and readiness.
+                  Based on your profile, budget, and readiness.
                 </p>
               </div>
 
@@ -97,7 +108,7 @@ export default function DashboardPage() {
                   Execution in progress
                 </p>
                 <p className="text-slate-500">
-                  Applying to{" "}
+                  You are applying to{" "}
                   <span className="font-semibold">
                     {lockedUniversity.name}
                   </span>
@@ -114,13 +125,14 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* ================= STRENGTH ================= */}
+        {/* ================= HOW STRONG AM I ================= */}
         <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
           <h2 className="text-xl font-bold mb-4">
             How strong is my profile?
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
             {/* Confidence */}
             <div>
               <p className="text-sm text-slate-500 mb-1">
@@ -132,17 +144,24 @@ export default function DashboardPage() {
                   style={{ width: `${confidence}%` }}
                 />
               </div>
-              <p className="mt-2 font-bold">{confidence}%</p>
+              <p className="mt-2 font-bold">
+                {confidence}%
+              </p>
             </div>
 
-            <InfoCard label="Risk Level" value={risk} />
+            {/* Risk */}
+            <InfoCard
+              label="Risk Level"
+              value={risk}
+            />
+
+            {/* Budget */}
             <InfoCard
               label="Annual Budget"
-              value={`₹${profile.budget.annualINR} LPA`}
+              value={budgetLabel}
             />
           </div>
         </section>
-
       </div>
     </div>
   );
@@ -162,8 +181,9 @@ function InfoCard({
       <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">
         {label}
       </p>
-      <p className="text-lg font-bold">{value}</p>
+      <p className="text-lg font-bold">
+        {value}
+      </p>
     </div>
   );
 }
-
