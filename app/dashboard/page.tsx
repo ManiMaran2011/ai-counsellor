@@ -2,183 +2,134 @@
 
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/context/UserContext";
+import { useEffect, useState } from "react";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { profile, stage, confidence, risk, lockedUniversity } = useUser();
 
-  const {
-    profile,
-    stage,
-    confidence,
-    risk,
-    lockedUniversity,
-  } = useUser();
+  const [ready, setReady] = useState(false);
 
-  // Safety: onboarding not complete
-  if (!profile) {
+  // ✅ Wait for hydration
+  useEffect(() => {
+    setReady(true);
+  }, []);
+
+  // ⏳ Prevent blank screen during hydration
+  if (!ready) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8fafc]">
-        <h2 className="text-2xl font-bold mb-2">
-          Profile not ready
-        </h2>
-        <p className="text-slate-500 mb-6">
-          Please complete onboarding to continue.
-        </p>
-        <button
-          onClick={() => router.push("/onboarding/step1")}
-          className="px-6 py-3 rounded-xl bg-primary text-white font-bold"
-        >
-          Start Onboarding
-        </button>
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <p className="text-slate-400 text-sm">Loading dashboard…</p>
       </div>
     );
   }
 
+  // 🔒 Onboarding safety
+  if (!profile) {
+    router.replace("/onboarding/step1");
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-[#f8fafc] px-6 py-12">
-      <div className="max-w-6xl mx-auto space-y-12">
-        {/* ================= HEADER ================= */}
-        <header className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold">
-            Your Study Abroad Dashboard
-          </h1>
-          <p className="text-slate-600">
-            This is your control center. Everything starts here.
-          </p>
-        </header>
+    <div className="space-y-10">
+      {/* ================= HEADER ================= */}
+      <header>
+        <h1 className="text-3xl font-bold">
+          Welcome back, {profile.name}
+        </h1>
+        <p className="text-slate-500">
+          This is your control center.
+        </p>
+      </header>
 
-        {/* ================= WHERE AM I ================= */}
-        <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-          <h2 className="text-xl font-bold mb-4">
-            Where am I?
-          </h2>
+      {/* ================= WHERE AM I ================= */}
+      <section className="bg-white rounded-2xl p-6 shadow-sm border">
+        <h2 className="text-xl font-bold mb-4">Where am I?</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <InfoCard
-              label="Current Stage"
-              value={`Stage ${stage}`}
-            />
-            <InfoCard
-              label="Target Degree"
-              value={profile.goals.targetDegree || "Not set"}
-            />
-            <InfoCard
-              label="Preferred Countries"
-              value={
-                profile.goals.countries.length > 0
-                  ? profile.goals.countries.join(", ")
-                  : "Not set"
-              }
-            />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Info label="Stage" value={`Stage ${stage}`} />
+          <Info label="Degree" value={profile.goals.targetDegree || "—"} />
+          <Info
+            label="Countries"
+            value={
+              profile.goals.countries.length
+                ? profile.goals.countries.join(", ")
+                : "—"
+            }
+          />
+        </div>
+      </section>
+
+      {/* ================= WHAT NEXT ================= */}
+      <section className="bg-white rounded-2xl p-6 shadow-sm border">
+        <h2 className="text-xl font-bold mb-4">What should I do next?</h2>
+
+        {!lockedUniversity ? (
+          <div className="flex justify-between items-center">
+            <p className="text-slate-600">
+              Discover universities that match your profile.
+            </p>
+            <button
+              onClick={() => router.push("/dashboard/insight")}
+              className="px-6 py-3 rounded-xl bg-primary text-white font-bold"
+            >
+              Discover Universities →
+            </button>
           </div>
-        </section>
-
-        {/* ================= WHAT SHOULD I DO ================= */}
-        <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-          <h2 className="text-xl font-bold mb-4">
-            What should I do next?
-          </h2>
-
-          {!lockedUniversity ? (
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div>
-                <p className="font-semibold mb-1">
-                  Discover universities that fit you
-                </p>
-                <p className="text-slate-500">
-                  Based on your profile, budget, and readiness.
-                </p>
-              </div>
-
-              <button
-                onClick={() => router.push("/dashboard/insight")}
-                className="px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary/90"
-              >
-                Discover Universities →
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div>
-                <p className="font-semibold mb-1">
-                  Execution in progress
-                </p>
-                <p className="text-slate-500">
-                  You are applying to{" "}
-                  <span className="font-semibold">
-                    {lockedUniversity.name}
-                  </span>
-                </p>
-              </div>
-
-              <button
-                onClick={() => router.push("/execution")}
-                className="px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary/90"
-              >
-                Go to Execution →
-              </button>
-            </div>
-          )}
-        </section>
-
-        {/* ================= HOW STRONG AM I ================= */}
-        <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-          <h2 className="text-xl font-bold mb-4">
-            How strong is my profile?
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Confidence */}
-            <div>
-              <p className="text-sm text-slate-500 mb-1">
-                Confidence
-              </p>
-              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all"
-                  style={{ width: `${confidence}%` }}
-                />
-              </div>
-              <p className="mt-2 font-bold">
-                {confidence}%
-              </p>
-            </div>
-
-            {/* Risk */}
-            <InfoCard
-              label="Risk Level"
-              value={risk}
-            />
-
-            {/* Budget */}
-            <InfoCard
-              label="Annual Budget"
-              value={`₹${profile.budget.annualINR} LPA`}
-            />
+        ) : (
+          <div className="flex justify-between items-center">
+            <p className="text-slate-600">
+              Applying to{" "}
+              <span className="font-semibold">
+                {lockedUniversity.name}
+              </span>
+            </p>
+            <button
+              onClick={() => router.push("/execution")}
+              className="px-6 py-3 rounded-xl bg-primary text-white font-bold"
+            >
+              Go to Execution →
+            </button>
           </div>
-        </section>
-      </div>
+        )}
+      </section>
+
+      {/* ================= STRENGTH ================= */}
+      <section className="bg-white rounded-2xl p-6 shadow-sm border">
+        <h2 className="text-xl font-bold mb-4">How strong am I?</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <p className="text-sm text-slate-500 mb-1">Confidence</p>
+            <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${confidence}%` }}
+              />
+            </div>
+            <p className="mt-2 font-bold">{confidence}%</p>
+          </div>
+
+          <Info label="Risk Level" value={risk} />
+          <Info
+            label="Budget"
+            value={`₹${profile.budget.annualINR} LPA`}
+          />
+        </div>
+      </section>
     </div>
   );
 }
 
-/* ================= HELPERS ================= */
+/* ---------- Helper ---------- */
 
-function InfoCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+    <div className="bg-slate-50 rounded-xl p-4 border">
       <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">
         {label}
       </p>
-      <p className="text-lg font-bold">
-        {value}
-      </p>
+      <p className="text-lg font-bold">{value}</p>
     </div>
   );
 }
