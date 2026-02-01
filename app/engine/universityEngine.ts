@@ -1,35 +1,37 @@
-import { Profile, University, RiskLevel } from "@/app/context/UserContext";
+// app/engine/universityEngine.ts
+
+import type { Profile } from "@/app/context/UserContext";
 
 export type UniversityCategory = "DREAM" | "TARGET" | "SAFE";
 
-export function classifyUniversity(
+/**
+ * Categorize university fit based on
+ * confidence + readiness signals
+ */
+export function categorizeUniversity(
   profile: Profile,
-  uni: University,
   confidence: number
 ): UniversityCategory {
-  const hasIELTS = profile.readiness.ielts !== "";
-  const hasSOP = profile.readiness.sop !== "";
+  // 🛡️ Defensive normalization
+  const readiness = profile.readiness ?? {
+    ielts: "",
+    gre: "",
+    sop: "",
+  };
 
+  const hasIELTS = readiness.ielts.trim() !== "";
+  const hasSOP = readiness.sop.trim() !== "";
+
+  // ❗ Weak profile → SAFE
   if (confidence < 50 || !hasIELTS || !hasSOP) {
     return "SAFE";
   }
 
-  if (confidence >= 75 && hasIELTS && hasSOP) {
-    return "DREAM";
+  // ⚖️ Mid profile → TARGET
+  if (confidence < 75) {
+    return "TARGET";
   }
 
-  return "TARGET";
-}
-
-export function universityRisk(
-  category: UniversityCategory
-): RiskLevel {
-  switch (category) {
-    case "DREAM":
-      return "HIGH";
-    case "TARGET":
-      return "MEDIUM";
-    case "SAFE":
-      return "LOW";
-  }
+  // 🚀 Strong profile → DREAM
+  return "DREAM";
 }
