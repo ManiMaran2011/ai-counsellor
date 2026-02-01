@@ -1,65 +1,45 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Read stage from cookie
   const stage = req.cookies.get("stage")?.value;
-  const locked = req.cookies.get("locked")?.value === "1";
 
-  // Always allow static assets & API
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.includes(".")
-  ) {
-    return NextResponse.next();
-  }
-
-  /* ---------- ONBOARDING ---------- */
+  /* ===============================
+     ALLOW ONBOARDING ALWAYS
+  =============================== */
   if (pathname.startsWith("/onboarding")) {
     return NextResponse.next();
   }
 
-  /* ---------- DASHBOARD ---------- */
-  if (pathname.startsWith("/dashboard")) {
+  /* ===============================
+     PROTECT DASHBOARD & EXECUTION
+  =============================== */
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/execution")
+  ) {
+    // Stage < 2 → onboarding not complete
     if (!stage || Number(stage) < 2) {
       return NextResponse.redirect(
-        new URL("/onboarding", req.url)
+        new URL("/onboarding/step1", req.url)
       );
     }
-    return NextResponse.next();
-  }
-
-  /* ---------- LOCK ---------- */
-  if (pathname.startsWith("/lock")) {
-    if (!stage || Number(stage) < 2) {
-      return NextResponse.redirect(
-        new URL("/onboarding", req.url)
-      );
-    }
-
-    if (Number(stage) === 4 || locked) {
-      return NextResponse.redirect(
-        new URL("/execution", req.url)
-      );
-    }
-
-    return NextResponse.next();
-  }
-
-  /* ---------- EXECUTION ---------- */
-  if (pathname.startsWith("/execution")) {
-    if (Number(stage) !== 4 || !locked) {
-      return NextResponse.redirect(
-        new URL("/dashboard", req.url)
-      );
-    }
-    return NextResponse.next();
   }
 
   return NextResponse.next();
 }
 
+/* ===============================
+   MATCHER (important)
+=============================== */
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/dashboard/:path*",
+    "/execution/:path*",
+    "/onboarding/:path*",
+  ],
 };
+
