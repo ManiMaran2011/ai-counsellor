@@ -1,106 +1,104 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { useUser } from "@/app/context/UserContext";
 
-/* ================= DUMMY DATA ================= */
+/* ---------- Dummy Universities ---------- */
 
 const UNIVERSITIES = [
-  { id: "u1", name: "Stanford University", avgCost: 90, tier: "DREAM" },
-  { id: "u2", name: "University of Toronto", avgCost: 55, tier: "TARGET" },
-  { id: "u3", name: "University of Melbourne", avgCost: 50, tier: "TARGET" },
-  { id: "u4", name: "TU Munich", avgCost: 30, tier: "SAFE" },
-  { id: "u5", name: "University of Warsaw", avgCost: 20, tier: "SAFE" },
+  { id: "u1", name: "MIT", avgCost: 70 },
+  { id: "u2", name: "Stanford University", avgCost: 72 },
+  { id: "u3", name: "University of Toronto", avgCost: 45 },
+  { id: "u4", name: "University of British Columbia", avgCost: 40 },
+  { id: "u5", name: "TU Munich", avgCost: 20 },
+  { id: "u6", name: "RWTH Aachen", avgCost: 18 },
+  { id: "u7", name: "Arizona State University", avgCost: 35 },
+  { id: "u8", name: "Northeastern University", avgCost: 50 },
+  { id: "u9", name: "University of Leeds", avgCost: 30 },
+  { id: "u10", name: "University of Glasgow", avgCost: 28 },
 ];
+
+/* ---------- Page ---------- */
 
 export default function InsightPage() {
   const router = useRouter();
-  const { profile, lockUniversity } = useUser();
+  const { profile, confidence, lockUniversity } = useUser();
 
-  if (!profile) {
+  if (!profile || !profile.budget || !profile.readiness) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-slate-400 text-sm">
-          Preparing university insights…
-        </p>
+      <div className="flex items-center justify-center h-full text-slate-400">
+        Preparing university insights…
       </div>
     );
   }
 
-  /* ================= NORMALIZATION (IMPORTANT) ================= */
+  const budget = Number(profile.budget.annualINR || 0);
+  const hasIELTS = profile.readiness.ielts?.trim() !== "";
+  const hasSOP = profile.readiness.sop?.trim() !== "";
 
-  const budgetLimit = Number(
-    profile.budget?.annualINR ?? 0
-  );
+  function categorize(cost: number) {
+    if (confidence >= 75 && hasIELTS && hasSOP && cost <= budget)
+      return "TARGET";
+    if (cost <= budget + 10) return "SAFE";
+    return "DREAM";
+  }
 
-  const confidenceBuffer = 10;
+  const grouped = {
+    DREAM: [] as typeof UNIVERSITIES,
+    TARGET: [] as typeof UNIVERSITIES,
+    SAFE: [] as typeof UNIVERSITIES,
+  };
 
-  const visibleUniversities = UNIVERSITIES.filter(
-    (u) => u.avgCost <= budgetLimit + confidenceBuffer
-  );
-
-  /* ================= UI ================= */
+  UNIVERSITIES.forEach((u) => {
+    grouped[categorize(u.avgCost)].push(u);
+  });
 
   return (
     <div className="space-y-10">
-      {/* Header */}
       <header>
-        <h1 className="text-3xl font-bold mb-2">
-          University Discovery
-        </h1>
+        <h1 className="text-2xl font-bold">University Discovery</h1>
         <p className="text-slate-500">
-          Based on your budget, readiness, and profile strength
+          These recommendations are based on your profile strength,
+          budget, and readiness.
         </p>
       </header>
 
-      {/* Groups */}
-      {["DREAM", "TARGET", "SAFE"].map((tier) => {
-        const group = visibleUniversities.filter(
-          (u) => u.tier === tier
-        );
+      {(["TARGET", "SAFE", "DREAM"] as const).map((cat) => (
+        <section key={cat}>
+          <h2 className="text-lg font-bold mb-4">{cat} Universities</h2>
 
-        if (group.length === 0) return null;
+          <div className="grid md:grid-cols-3 gap-5">
+            {grouped[cat].map((u) => (
+              <motion.div
+                key={u.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white p-5 rounded-xl border shadow-sm hover:shadow-md transition"
+              >
+                <h3 className="font-bold">{u.name}</h3>
+                <p className="text-sm text-slate-500 mb-4">
+                  Avg Cost: ₹{u.avgCost}L / year
+                </p>
 
-        return (
-          <section key={tier}>
-            <h2 className="text-xl font-bold mb-4">
-              {tier} Universities
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {group.map((u) => (
-                <div
-                  key={u.id}
-                  className="bg-white border border-slate-100 rounded-xl p-6 shadow-sm"
+                <button
+                  onClick={() => {
+                    lockUniversity({
+                      id: u.id,
+                      name: u.name,
+                      category: cat,
+                    });
+                    router.push("/execution");
+                  }}
+                  className="w-full bg-primary text-white py-2 rounded-lg font-semibold hover:bg-primary/90"
                 >
-                  <h3 className="text-lg font-bold">
-                    {u.name}
-                  </h3>
-
-                  <p className="text-sm text-slate-500 mt-1">
-                    Avg annual cost: ₹{u.avgCost}L
-                  </p>
-
-                  <button
-                    onClick={() => lockUniversity({ id: u.id, name: u.name })}
-                    className="mt-4 px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold hover:bg-primary/90"
-                  >
-                    Lock this university
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      })}
-
-      {/* Back */}
-      <button
-        onClick={() => router.push("/dashboard")}
-        className="text-sm text-slate-500 hover:text-primary"
-      >
-        ← Back to Dashboard
-      </button>
+                  Lock University →
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

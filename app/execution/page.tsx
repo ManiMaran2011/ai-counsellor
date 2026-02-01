@@ -1,200 +1,113 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { useUser } from "@/app/context/UserContext";
+import { useMemo, useState, useEffect } from "react";
 
-/* ================= PAGE ================= */
+/* ---------- Page ---------- */
 
 export default function ExecutionPage() {
-  const router = useRouter();
   const {
-    profile,
     lockedUniversity,
     tasks,
     completeTask,
     confidence,
-    risk,
-    unlockUniversity,
   } = useUser();
 
-  // Guard rails
-  if (!profile) {
-    router.push("/dashboard");
-    return null;
-  }
+  const dailyFocus = useMemo(
+    () => tasks.find((t) => t.status !== "DONE"),
+    [tasks]
+  );
+
+  const [explanation, setExplanation] = useState("");
+
+  useEffect(() => {
+    if (!dailyFocus) return;
+
+    import("@/app/engine/taskExplanationEngine").then(
+      ({ explainTask }) => {
+        explainTask(dailyFocus).then(setExplanation);
+      }
+    );
+  }, [dailyFocus]);
 
   if (!lockedUniversity) {
-    router.push("/dashboard/insight");
-    return null;
+    return (
+      <div className="flex items-center justify-center h-full text-slate-400">
+        No university locked yet.
+      </div>
+    );
   }
 
-  const pendingTasks = tasks.filter((t) => t.status !== "DONE");
-  const completedTasks = tasks.filter((t) => t.status === "DONE");
-
   return (
-    <div className="min-h-screen bg-[#f8fafc] px-6 py-12">
-      <div className="max-w-5xl mx-auto space-y-10">
-        {/* ================= HEADER ================= */}
-        <header className="space-y-2">
-          <h1 className="text-3xl font-bold">
-            Application Execution
-          </h1>
-          <p className="text-slate-600">
-            You are now actively applying to{" "}
-            <span className="font-semibold">
-              {lockedUniversity.name}
-            </span>
-          </p>
-        </header>
+    <div className="space-y-10">
+      {/* Header */}
+      <header>
+        <h1 className="text-2xl font-bold">Execution Mode</h1>
+        <p className="text-slate-500">
+          Applying to <b>{lockedUniversity.name}</b>
+        </p>
+      </header>
 
-        {/* ================= STATUS BAR ================= */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatusCard
-            label="Confidence"
-            value={`${confidence}%`}
-            tone={
-              confidence >= 75
-                ? "good"
-                : confidence >= 50
-                ? "mid"
-                : "bad"
-            }
+      {/* Confidence */}
+      <section className="bg-white p-5 rounded-xl border">
+        <p className="text-sm text-slate-500 mb-2">Profile Confidence</p>
+        <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+          <div
+            className="h-full bg-primary transition-all"
+            style={{ width: `${confidence}%` }}
           />
+        </div>
+        <p className="mt-2 font-bold">{confidence}%</p>
+      </section>
 
-          <StatusCard
-            label="Risk Level"
-            value={risk}
-            tone={
-              risk === "LOW"
-                ? "good"
-                : risk === "MEDIUM"
-                ? "mid"
-                : "bad"
-            }
-          />
+      {/* Daily Focus */}
+      {dailyFocus && (
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-soft-blue p-6 rounded-xl border"
+        >
+          <h2 className="font-bold mb-2">🎯 Today’s Focus</h2>
+          <p className="mb-3">{dailyFocus.title}</p>
 
-          <StatusCard
-            label="Pending Tasks"
-            value={pendingTasks.length.toString()}
-            tone={
-              pendingTasks.length === 0 ? "good" : "mid"
-            }
-          />
-        </section>
-
-        {/* ================= TASKS ================= */}
-        <section className="space-y-6">
-          <h2 className="text-xl font-bold">
-            What you need to do now
-          </h2>
-
-          {pendingTasks.length === 0 ? (
-            <div className="bg-white p-6 rounded-2xl border border-slate-100">
-              <p className="text-green-600 font-semibold">
-                🎉 All tasks completed!
-              </p>
-              <p className="text-sm text-slate-500 mt-1">
-                Your application is in a strong position.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {pendingTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="bg-white rounded-2xl p-6 border border-slate-100 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-bold">{task.title}</p>
-                    <p className="text-xs text-slate-500">
-                      Risk impact:{" "}
-                      <span className="font-semibold">
-                        {task.risk}
-                      </span>
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => completeTask(task.id)}
-                    className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary/90"
-                  >
-                    Mark Done
-                  </button>
-                </div>
-              ))}
-            </div>
+          {explanation && (
+            <p className="text-sm text-slate-600 mb-4">
+              {explanation}
+            </p>
           )}
-        </section>
 
-        {/* ================= COMPLETED ================= */}
-        {completedTasks.length > 0 && (
-          <section className="space-y-4">
-            <h3 className="text-lg font-bold text-slate-600">
-              Completed
-            </h3>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => completeTask(dailyFocus.id)}
+            className="bg-primary text-white px-5 py-2 rounded-lg font-bold"
+          >
+            Mark Complete
+          </motion.button>
+        </motion.section>
+      )}
 
-            <div className="space-y-3">
-              {completedTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="bg-slate-50 p-4 rounded-xl text-sm text-slate-500 line-through"
-                >
-                  {task.title}
-                </div>
-              ))}
+      {/* Task List */}
+      <section>
+        <h2 className="font-bold mb-4">All Tasks</h2>
+        <div className="space-y-3">
+          {tasks.map((t) => (
+            <div
+              key={t.id}
+              className={`p-4 rounded-lg border flex justify-between items-center ${
+                t.status === "DONE"
+                  ? "bg-slate-50 text-slate-400"
+                  : "bg-white"
+              }`}
+            >
+              <span>{t.title}</span>
+              <span className="text-xs font-bold">
+                {t.status === "DONE" ? "DONE" : t.risk}
+              </span>
             </div>
-          </section>
-        )}
-
-        {/* ================= FOOTER ACTIONS ================= */}
-        <section className="pt-6 flex flex-col md:flex-row gap-4">
-          <button
-            onClick={() => {
-              unlockUniversity();
-              router.push("/dashboard/insight");
-            }}
-            className="border border-slate-200 rounded-xl px-6 py-3 text-sm font-semibold hover:bg-slate-50"
-          >
-            Unlock University
-          </button>
-
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="text-slate-500 text-sm hover:text-slate-700"
-          >
-            Back to Dashboard
-          </button>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-/* ================= COMPONENT ================= */
-
-function StatusCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "good" | "mid" | "bad";
-}) {
-  const toneMap = {
-    good: "text-green-600",
-    mid: "text-amber-600",
-    bad: "text-red-600",
-  };
-
-  return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-100">
-      <p className="text-xs uppercase tracking-wider text-slate-400 mb-1">
-        {label}
-      </p>
-      <p className={`text-2xl font-bold ${toneMap[tone]}`}>
-        {value}
-      </p>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,70 +1,31 @@
-// app/engine/counsellorEngine.ts
-
 import type { Profile, University } from "@/app/context/UserContext";
+import { geminiExplain } from "./geminiClient";
 
-/**
- * Counsellor recommendation engine
- * --------------------------------
- * Pure logic layer.
- * NO LLM dependency.
- * Gemini will plug in later.
- */
-
-export type CounsellorSignal = {
-  recommendation: string;
-  confidenceImpact: number;
-  urgency: "LOW" | "MEDIUM" | "HIGH";
-};
-
-export function counsellorRecommendation(
+export async function counsellorRecommendation(
   profile: Profile,
-  university: University,
-  confidence: number
-): CounsellorSignal {
-  // 1️⃣ Base recommendation
-  let recommendation = "";
-  let urgency: CounsellorSignal["urgency"] = "LOW";
-  let confidenceImpact = 0;
+  university: University
+) {
+  const prompt = `
+You are an expert study-abroad counsellor.
 
-  // 2️⃣ Category-based logic
-  if (university.category === "DREAM") {
-    recommendation =
-      "This is a high-risk, high-reward choice. Only proceed if deadlines and preparation are handled aggressively.";
-    urgency = "HIGH";
-    confidenceImpact = -10;
-  }
+Student profile:
+- Degree: ${profile.goals.targetDegree}
+- Countries: ${profile.goals.countries.join(", ")}
+- Budget: ${profile.budget?.annualINR ?? "Not set"} L INR
+- IELTS: ${profile.readiness?.ielts || "Not completed"}
+- SOP: ${profile.readiness?.sop || "Not ready"}
 
-  if (university.category === "TARGET") {
-    recommendation =
-      "This university aligns well with your profile. Locking now allows us to optimize timelines and outcomes.";
-    urgency = "MEDIUM";
-    confidenceImpact = +5;
-  }
+University:
+- Name: ${university.name}
+- Category: ${university.category}
 
-  if (university.category === "SAFE") {
-    recommendation =
-      "This is a safe option. Locking ensures you secure at least one strong admit.";
-    urgency = "LOW";
-    confidenceImpact = +2;
-  }
+Explain in 2–3 sentences:
+Why this university is a good (or risky) choice for this student.
+`;
 
-  // 3️⃣ Confidence correction
-  if (confidence < 50) {
-    urgency = "HIGH";
-    recommendation +=
-      " Your current confidence is low — delays may increase risk.";
-  }
-
-  // 4️⃣ Readiness signals
-  if (!profile.readiness?.ielts) {
-    urgency = "HIGH";
-    recommendation +=
-      " English test readiness is missing and must be addressed immediately.";
-  }
+  const explanation = await geminiExplain(prompt);
 
   return {
-    recommendation,
-    confidenceImpact,
-    urgency,
+    message: explanation,
   };
 }
