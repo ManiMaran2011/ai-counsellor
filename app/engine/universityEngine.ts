@@ -4,30 +4,26 @@ import type { Profile } from "@/app/context/UserContext";
 
 export type UniversityCategory = "DREAM" | "TARGET" | "SAFE";
 
-/**
- * Categorize university fit based on
- * confidence + readiness signals
- */
 export function categorizeUniversity(
   profile: Profile,
   confidence: number
 ): UniversityCategory {
-  // 🛡️ Defensive normalization
-  const readiness = profile.readiness ?? {
-    ielts: "",
-    gre: "",
-    sop: "",
+  // ✅ HARD NORMALIZATION (TypeScript-safe)
+  const readiness = {
+    ielts: profile.readiness?.ielts ?? "",
+    gre: profile.readiness?.gre ?? "",
+    sop: profile.readiness?.sop ?? "",
   };
 
-  const hasIELTS = readiness.ielts.trim() !== "";
-  const hasSOP = readiness.sop.trim() !== "";
+  const hasIELTS = readiness.ielts.trim().length > 0;
+  const hasSOP = readiness.sop.trim().length > 0;
 
   // ❗ Weak profile → SAFE
   if (confidence < 50 || !hasIELTS || !hasSOP) {
     return "SAFE";
   }
 
-  // ⚖️ Mid profile → TARGET
+  // ⚠️ Medium strength → TARGET
   if (confidence < 75) {
     return "TARGET";
   }
