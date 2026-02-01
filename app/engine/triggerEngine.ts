@@ -1,15 +1,26 @@
 // app/engine/triggerEngine.ts
 
 import type { Task } from "@/app/context/UserContext";
-import { applyTaskTriggers } from "./taskTriggers";
+import { TASK_TRIGGERS } from "./taskTriggers";
 
 /**
- * Central trigger engine
- * Runs AFTER a task is completed
+ * Applies task triggers after completion
  */
-export function runTriggerEngine(
-  completedTaskId: string,
-  currentTasks: Task[]
+export function applyTaskTriggers(
+  tasks: Task[],
+  completedTaskId: string
 ): Task[] {
-  return applyTaskTriggers(completedTaskId, currentTasks);
+  const existingIds = new Set(tasks.map((t) => t.id));
+  const next = [...tasks];
+
+  TASK_TRIGGERS.forEach((trigger) => {
+    if (
+      trigger.whenCompleted === completedTaskId &&
+      !existingIds.has(trigger.creates.id)
+    ) {
+      next.push(trigger.creates);
+    }
+  });
+
+  return next;
 }

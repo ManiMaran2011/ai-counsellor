@@ -1,12 +1,17 @@
-import { Task } from "@/app/context/UserContext";
+// app/engine/escalationEngine.ts
 
+import type { Task } from "@/app/context/UserContext";
+
+/**
+ * Determines if expert escalation is required
+ */
 export function shouldEscalate(
-  confidence: number,
-  tasks: Task[]
+  tasks: Task[],
+  confidence: number
 ): boolean {
-  const hasCriticalPending = tasks.some(
-    (t) => t.risk === "HIGH" && t.status !== "DONE"
+  const hasHighRiskPending = tasks.some(
+    (t) => t.status !== "DONE" && t.risk === "HIGH"
   );
 
-  return confidence < 50 && hasCriticalPending;
+  return hasHighRiskPending && confidence < 60;
 }
